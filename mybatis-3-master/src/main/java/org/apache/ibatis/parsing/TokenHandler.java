@@ -16,9 +16,15 @@
 package org.apache.ibatis.parsing;
 
 /**
+ * 占位符处理功能
  * @author Clinton Begin
  */
 public interface TokenHandler {
+  /**
+   * 处理占位符的功能，定义接口的功能
+   * @param content 包含需要解析的占位符功能的字符串
+   * @return 返回值
+   */
   String handleToken(String content);
 }
 

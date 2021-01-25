@@ -28,15 +28,39 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
+ * 封装了 XPath 解析 Node
  * @author Clinton Begin
  */
 public class XNode {
 
+  /**
+   * XPath 解析的Node
+   */
   private final Node node;
+  /**
+   * node 名称
+   */
   private final String name;
+  /**
+   * 内容 text == ccc
+   * <A>
+   *    <B>
+   *      <C>ccc<C/>
+   *    <B/>
+   * <A/>
+   */
   private final String body;
+  /**
+   * Node 的属性信息
+   */
   private final Properties attributes;
+  /**
+   * 外部传过来：变量属性
+   */
   private final Properties variables;
+  /**
+   * xpathParser 解析器，this ，持有 XPath 、Document 等
+   */
   private final XPathParser xpathParser;
 
   public XNode(XPathParser xpathParser, Node node, Properties variables) {
@@ -52,6 +76,10 @@ public class XNode {
     return new XNode(xpathParser, node, variables);
   }
 
+  /**
+   * 获取Node 的父节点
+   * @return
+   */
   public XNode getParent() {
     Node parent = node.getParentNode();
     if (!(parent instanceof Element)) {
@@ -61,6 +89,17 @@ public class XNode {
     }
   }
 
+  /**
+   * 获取当前XNode 即Node 的 路径 demo /users/user/name
+   *
+   * <users>
+   *    <user>
+   *      <name><name/>
+   *    <user/>
+   * <users/>
+   *
+   * @return
+   */
   public String getPath() {
     StringBuilder builder = new StringBuilder();
     Node current = node;
@@ -74,6 +113,7 @@ public class XNode {
     return builder.toString();
   }
 
+  // users[null]user[u1]name[张三]
   public String getValueBasedIdentifier() {
     StringBuilder builder = new StringBuilder();
     XNode current = this;
@@ -81,6 +121,8 @@ public class XNode {
       if (current != this) {
         builder.insert(0, "_");
       }
+      // 获取id 属性值，默认为 value 属性的 property 属性值，最后默认为 null
+      // 也就是找到 id 数据，如果没有，找value 属性，再没有，找 property ，还是找不到，则返回 null
       String value = current.getStringAttribute("id",
           current.getStringAttribute("value",
               current.getStringAttribute("property", (String) null)));
@@ -90,13 +132,18 @@ public class XNode {
         builder.insert(0,
             value);
         builder.insert(0, "[");
+        // name[value--解析到到value]
+        // name[张三]
       }
       builder.insert(0, current.getName());
+      // 返回parent 找
       current = current.getParent();
     }
     return builder.toString();
   }
 
+  // 其实还是调用 XPath 解析，而这个XPath 是冲 XPathParser 传过来的
+  // 这样的设置也可以学习
   public String evalString(String expression) {
     return xpathParser.evalString(node, expression);
   }
@@ -173,6 +220,9 @@ public class XNode {
     return body == null ? def : Float.valueOf(body);
   }
 
+  /**
+   * 获取枚举值
+    */
   public <T extends Enum<T>> T getEnumAttribute(Class<T> enumType, String name) {
     return getEnumAttribute(enumType, name, null);
   }
@@ -254,6 +304,10 @@ public class XNode {
     return value == null ? def : Float.valueOf(value);
   }
 
+  /**
+   * 获取其子节点的List<XNode>
+   * @return
+   */
   public List<XNode> getChildren() {
     List<XNode> children = new ArrayList<>();
     NodeList nodeList = node.getChildNodes();
@@ -261,6 +315,7 @@ public class XNode {
       for (int i = 0, n = nodeList.getLength(); i < n; i++) {
         Node node = nodeList.item(i);
         if (node.getNodeType() == Node.ELEMENT_NODE) {
+          // 再次将 xpathParser 传递
           children.add(new XNode(xpathParser, node, variables));
         }
       }
@@ -268,6 +323,12 @@ public class XNode {
     return children;
   }
 
+  /**
+   * 获取其下一级子节点name 属性值和value 数据性值
+   *   并且name 属性值 作为key 、value 属性值 作为 value
+   *   封装到 Properties 返回
+   * @return
+   */
   public Properties getChildrenAsProperties() {
     Properties properties = new Properties();
     for (XNode child : getChildren()) {
@@ -327,23 +388,38 @@ public class XNode {
     }
   }
 
+  /**
+   * 解析 node 的属性信息
+   * @param n node 节点
+   * @return 返回解析后的 Properties 信息
+   */
   private Properties parseAttributes(Node n) {
     Properties attributes = new Properties();
     NamedNodeMap attributeNodes = n.getAttributes();
     if (attributeNodes != null) {
       for (int i = 0; i < attributeNodes.getLength(); i++) {
         Node attribute = attributeNodes.item(i);
+        // 同样会借助 PropertyParser.parse 进行占位符解析
         String value = PropertyParser.parse(attribute.getNodeValue(), variables);
+        // 存放解析到的属性信息
         attributes.put(attribute.getNodeName(), value);
       }
     }
     return attributes;
   }
 
+  /**
+   * 将 node 解析为 body，即解析到最终的 text 文本
+   * @param node
+   * @return
+   */
   private String parseBody(Node node) {
     String data = getBodyData(node);
+    // 当前节点不是文本节点
     if (data == null) {
+      // 获取器子节点
       NodeList children = node.getChildNodes();
+      // 递归了
       for (int i = 0; i < children.getLength(); i++) {
         Node child = children.item(i);
         data = getBodyData(child);
@@ -356,9 +432,12 @@ public class XNode {
   }
 
   private String getBodyData(Node child) {
+    // 如果是 CDATASection 或者 文本
     if (child.getNodeType() == Node.CDATA_SECTION_NODE
         || child.getNodeType() == Node.TEXT_NODE) {
+      // 直接拿到文本信息，否则返回null，简单理解为 text
       String data = ((CharacterData) child).getData();
+      // 这里如果没有使用占位符，这会直接返回
       data = PropertyParser.parse(data, variables);
       return data;
     }
