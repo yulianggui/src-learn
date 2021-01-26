@@ -18,8 +18,19 @@ package org.apache.ibatis.reflection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+/**
+ * Reflector 工厂接口，用于创建和缓存 Reflector 对象
+ * 这里也值得参考，Factory 不仅仅创建 Reflector 对象
+ * 还进行了缓存的功能
+ */
 public class DefaultReflectorFactory implements ReflectorFactory {
+  /**
+   * 默认启用缓存
+   */
   private boolean classCacheEnabled = true;
+  /**
+   * 线程安全的concurrentMap
+   */
   private final ConcurrentMap<Class<?>, Reflector> reflectorMap = new ConcurrentHashMap<>();
 
   public DefaultReflectorFactory() {

@@ -18,9 +18,19 @@ package org.apache.ibatis.reflection.invoker;
 import java.lang.reflect.InvocationTargetException;
 
 /**
+ * 方法调用，字段赋值，二义性属性方法的调用，获取返回值的封装
+ *  -- 也很值得参考学习啊
  * @author Clinton Begin
  */
 public interface Invoker {
+  /**
+   * 调用 比如调用set方法，字段的赋值，获取等
+   * @param target 目标对象
+   * @param args 参数信息
+   * @return 返回值 Object 如何转换赋值？ 估计是ObjectFactory 或者强转吧
+   * @throws IllegalAccessException
+   * @throws InvocationTargetException
+   */
   Object invoke(Object target, Object[] args) throws IllegalAccessException, InvocationTargetException;
 
   Class<?> getType();

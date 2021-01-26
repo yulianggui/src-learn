@@ -17,9 +17,22 @@ package org.apache.ibatis.reflection;
 
 public interface ReflectorFactory {
 
+  /**
+   * 是否开启缓存
+   * @return
+   */
   boolean isClassCacheEnabled();
 
+  /**
+   * 设置是否缓存
+   * @param classCacheEnabled
+   */
   void setClassCacheEnabled(boolean classCacheEnabled);
 
+  /**
+   * 构建 Class 对应的 Reflector
+   * @param type 类型，在Mybatis 中这里一般都算 JavaBean 的裂隙
+   * @return 返回 Reflector
+   */
   Reflector findForClass(Class<?> type);
 }
