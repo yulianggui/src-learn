@@ -97,6 +97,7 @@ public class Reflector {
     type = clazz;
     // 添加默认的构造方法
     addDefaultConstructor(clazz);
+    // 添加get 方法到 getMethods 、getTypes
     addGetMethods(clazz);
     addSetMethods(clazz);
     addFields(clazz);
@@ -341,7 +342,7 @@ public class Reflector {
 
       // we also need to look for interface methods -
       // because the class may be abstract
-      // 如果定义的接口，这遍历接口集合，将接口当前层级的 共有方法添加进来
+      // 如果定义的接口，这遍历接口集合，将接口当前层级的 公有方法添加进来
       Class<?>[] interfaces = currentClass.getInterfaces();
       for (Class<?> anInterface : interfaces) {
         addUniqueMethods(uniqueMethods, anInterface.getMethods());
