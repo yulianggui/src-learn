@@ -53,7 +53,7 @@ public class XPathParser {
   private boolean validation;
   /**
    * 用于加载本地DTD 文件
-   * 如果设置了该属性，并且对文档进行校验， 回去加载DTD 或者XSD 文件对文档中的 节点名称等进行严格的校验
+   * 如果设置了该属性，并且对文档进行校验， 会去加载DTD 或者XSD 文件对文档中的 节点名称等进行严格的校验
    * {@link XMLMapperEntityResolver } 为Mybatis 环境的实现，里边可以找到 xml 文件的规范XSD 、DTD 文本的位置
    */
   private EntityResolver entityResolver;

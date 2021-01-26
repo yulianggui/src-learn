@@ -42,6 +42,9 @@ import org.apache.ibatis.reflection.invoker.SetFieldInvoker;
 import org.apache.ibatis.reflection.property.PropertyNamer;
 
 /**
+ * 反射信息，在mybatis 中，一个Reflector 缓存的是一个对象（JavaBean）：
+ *    具备缓存的功能
+ *    通过属性名和set/get 方法进行缓存
  * This class represents a cached set of class definition information that
  * allows for easy mapping between property names and getter/setter methods.
  *
@@ -49,19 +52,50 @@ import org.apache.ibatis.reflection.property.PropertyNamer;
  */
 public class Reflector {
 
+  /**
+   * 保存对象的Class 对象引用
+   * 注意这里用 Class<?>
+   */
   private final Class<?> type;
+  /**
+   * 可读属性名称数组； 在Mybatis 中定义为 存在getXXX 的方法名称  会把解析为属性
+   */
   private final String[] readablePropertyNames;
+  /**
+   * 可写属性名称数组，同理。 setXXX
+   */
   private final String[] writablePropertyNames;
+  /**
+   * 方法，属性的setXXX 方法的缓存， key 为方法名称 Invoker 是对Method 的封装
+   */
   private final Map<String, Invoker> setMethods = new HashMap<>();
+  /**
+   * 同理 getXXX 方法的缓存
+   */
   private final Map<String, Invoker> getMethods = new HashMap<>();
+  /**
+   * key 方法名称。 value getXXX 方法参数属性类型 Class 类型
+   */
   private final Map<String, Class<?>> setTypes = new HashMap<>();
+  /**
+   * key 方法名称。 value setXXX 方法参数属性类型 Class 类型
+   */
   private final Map<String, Class<?>> getTypes = new HashMap<>();
+  /**
+   * 记录默认的构造方法
+   */
   private Constructor<?> defaultConstructor;
-
+  /**
+   * 记录所有set/get 方法名称的集合
+   * key - value
+   * 属性名称转大写   属性名称
+   */
   private Map<String, String> caseInsensitivePropertyMap = new HashMap<>();
 
   public Reflector(Class<?> clazz) {
+    // 记录当前用到反射操作的 Class 类型
     type = clazz;
+    // 添加默认的构造方法
     addDefaultConstructor(clazz);
     addGetMethods(clazz);
     addSetMethods(clazz);
@@ -76,15 +110,28 @@ public class Reflector {
     }
   }
 
+  /**
+   * 找到默认的构造方法。保存到成员变量
+   * @param clazz clazz 类型
+   */
   private void addDefaultConstructor(Class<?> clazz) {
+    // 得到所有构造方法
     Constructor<?>[] constructors = clazz.getDeclaredConstructors();
+    // 找到参数为 0 个的构造方法，赋值给成员变量 。 使用jdk 1.8 的语法
     Arrays.stream(constructors).filter(constructor -> constructor.getParameterTypes().length == 0)
       .findAny().ifPresent(constructor -> this.defaultConstructor = constructor);
   }
 
+  /**
+   * 找到所有的getXXX 方法。 并且是没有
+   * @param clazz clazz 类型
+   */
   private void addGetMethods(Class<?> clazz) {
+    // 同一个setOrg 可能有多个重载； 或参数个数不一样，或参数个数一样，但是方法签名（参数类型）不一样
     Map<String, List<Method>> conflictingGetters = new HashMap<>();
+    // 得到所有的方法列表 -- 包括 父类、接口定义的、父接口； 共有、私有、静态等方法。 通过方法签名进行去重
     Method[] methods = getClassMethods(clazz);
+    // 找出只有方法参数为0，且 已get 开头的方法，接着遍历
     Arrays.stream(methods).filter(m -> m.getParameterTypes().length == 0 && PropertyNamer.isGetter(m.getName()))
       .forEach(m -> addMethodConflict(conflictingGetters, PropertyNamer.methodToProperty(m.getName()), m));
     resolveGetterConflicts(conflictingGetters);
@@ -141,6 +188,12 @@ public class Reflector {
     resolveSetterConflicts(conflictingSetters);
   }
 
+  /**
+   * 以 name 为key 、 method Map为List<Method> 的item 添加到 conflictingMethods
+   * @param conflictingMethods 集合
+   * @param name setXX getXX 解析出来的属性名称
+   * @param method 方法
+   */
   private void addMethodConflict(Map<String, List<Method>> conflictingMethods, String name, Method method) {
     if (isValidPropertyName(name)) {
       List<Method> list = conflictingMethods.computeIfAbsent(name, k -> new ArrayList<>());
@@ -259,11 +312,17 @@ public class Reflector {
     }
   }
 
+  /**
+   * 判断是否为有效的属性名称
+   * @param name 非serialVersionUID、class、已 $ 开始的属性
+   * @return 返回
+   */
   private boolean isValidPropertyName(String name) {
     return !(name.startsWith("$") || "serialVersionUID".equals(name) || "class".equals(name));
   }
 
   /**
+   * 返回clazz 类型的所有方法。包括在 这个class 声明的，或者是起 父类中声明的
    * This method returns an array containing all methods
    * declared in this class and any superclass.
    * We use this method, instead of the simpler <code>Class.getMethods()</code>,
@@ -275,27 +334,41 @@ public class Reflector {
   private Method[] getClassMethods(Class<?> clazz) {
     Map<String, Method> uniqueMethods = new HashMap<>();
     Class<?> currentClass = clazz;
+    // 如果
     while (currentClass != null && currentClass != Object.class) {
+      // 返回当前 class 的所有共有、非共有、公共、保护、默认（包）访问和私有方法，但是不包括父类中的方法
       addUniqueMethods(uniqueMethods, currentClass.getDeclaredMethods());
 
       // we also need to look for interface methods -
       // because the class may be abstract
+      // 如果定义的接口，这遍历接口集合，将接口当前层级的 共有方法添加进来
       Class<?>[] interfaces = currentClass.getInterfaces();
       for (Class<?> anInterface : interfaces) {
         addUniqueMethods(uniqueMethods, anInterface.getMethods());
       }
-
+      // 指向父类，然后进行同样的操作
       currentClass = currentClass.getSuperclass();
     }
 
     Collection<Method> methods = uniqueMethods.values();
 
+    // 转换为数组
     return methods.toArray(new Method[0]);
   }
 
+  /**
+   * https://blog.csdn.net/qq_40272978/article/details/107370187
+   * uniqueMethods 保存方法的Map
+   * @param uniqueMethods 唯一方法
+   * @param methods 需要添加到 uniqueMethods 的方法数组
+   */
   private void addUniqueMethods(Map<String, Method> uniqueMethods, Method[] methods) {
     for (Method currentMethod : methods) {
+      // 是否是桥接方法
+      // 桥接方法是 JDK 1.5 引入泛型后，为了使Java的泛型方法生成的字节码和 1.5 版本前的字节码相兼容而实现的。具体作用
+      // 在于判断方法是否是有编译成在编译阶段自动生成的。
       if (!currentMethod.isBridge()) {
+        // 获取该方法的签名，签名使得方法签名唯一
         String signature = getSignature(currentMethod);
         // check to see if the method is already known
         // if it is known, then an extended class must have
@@ -307,8 +380,18 @@ public class Reflector {
     }
   }
 
+  /**
+   * Method 方法签名
+   *
+   * 放回类型#方法名称
+   * returnType.getName()#method.getName():parameters[0].getName(),parameters[1].getName()
+   *
+   * @param method 方法Method 对象
+   * @return 返回签名
+   */
   private String getSignature(Method method) {
     StringBuilder sb = new StringBuilder();
+    // 返回类型
     Class<?> returnType = method.getReturnType();
     if (returnType != null) {
       sb.append(returnType.getName()).append('#');

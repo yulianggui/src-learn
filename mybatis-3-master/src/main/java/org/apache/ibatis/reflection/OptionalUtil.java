@@ -24,6 +24,11 @@ import java.util.Optional;
 @Deprecated
 public abstract class OptionalUtil {
 
+  /**
+   * 返回 Optional 对象
+   * @param value 如果 value 为 null ,则new 一个对象，但是 this.value = null ,否则 Optional 中value= object value
+   * @return
+   */
   public static Object ofNullable(Object value) {
     return Optional.ofNullable(value);
   }
