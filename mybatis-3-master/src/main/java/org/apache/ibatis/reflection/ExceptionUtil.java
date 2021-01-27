@@ -19,12 +19,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.UndeclaredThrowableException;
 
 /**
+ * 异常封装工具类
  * @author Clinton Begin
  */
 public class ExceptionUtil {
 
   private ExceptionUtil() {
     // Prevent Instantiation
+    // 阻止实例化
   }
 
   public static Throwable unwrapThrowable(Throwable wrapped) {

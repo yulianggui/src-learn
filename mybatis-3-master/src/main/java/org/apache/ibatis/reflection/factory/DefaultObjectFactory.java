@@ -34,6 +34,7 @@ import org.apache.ibatis.reflection.ReflectionException;
 import org.apache.ibatis.reflection.Reflector;
 
 /**
+ * 对象工厂
  * @author Clinton Begin
  */
 public class DefaultObjectFactory implements ObjectFactory, Serializable {
@@ -48,13 +49,24 @@ public class DefaultObjectFactory implements ObjectFactory, Serializable {
   @SuppressWarnings("unchecked")
   @Override
   public <T> T create(Class<T> type, List<Class<?>> constructorArgTypes, List<Object> constructorArgs) {
+    // 需要创建的对象
     Class<?> classToCreate = resolveInterface(type);
     // we know types are assignable
+    // 我们知道类型是可指定的
     return (T) instantiateClass(classToCreate, constructorArgTypes, constructorArgs);
   }
 
+  /**
+   * 根据类型，调用指定的构造方法
+   * @param type 类型，已经经过处理； Collection 的类型
+   * @param constructorArgTypes 构造方法参数类型列表 class
+   * @param constructorArgs 构造方法真正的参数
+   * @param <T> 发型名称
+   * @return 返回类型实例
+   */
   private  <T> T instantiateClass(Class<T> type, List<Class<?>> constructorArgTypes, List<Object> constructorArgs) {
     try {
+      // 进行构造方法匹配
       Constructor<T> constructor;
       if (constructorArgTypes == null || constructorArgs == null) {
         constructor = type.getDeclaredConstructor();
@@ -81,6 +93,7 @@ public class DefaultObjectFactory implements ObjectFactory, Serializable {
         }
       }
     } catch (Exception e) {
+      // 初始失败，包装更好的提示信息给用户，抛出异常
       String argTypes = Optional.ofNullable(constructorArgTypes).orElseGet(Collections::emptyList)
           .stream().map(Class::getSimpleName).collect(Collectors.joining(","));
       String argValues = Optional.ofNullable(constructorArgs).orElseGet(Collections::emptyList)
@@ -92,6 +105,7 @@ public class DefaultObjectFactory implements ObjectFactory, Serializable {
   protected Class<?> resolveInterface(Class<?> type) {
     Class<?> classToCreate;
     if (type == List.class || type == Collection.class || type == Iterable.class) {
+      // 如果是 List、Collection、Iterable ，默认我ArrayList 处理
       classToCreate = ArrayList.class;
     } else if (type == Map.class) {
       classToCreate = HashMap.class;
@@ -107,6 +121,7 @@ public class DefaultObjectFactory implements ObjectFactory, Serializable {
 
   @Override
   public <T> boolean isCollection(Class<T> type) {
+    // Collection 是否为 type 的父类
     return Collection.class.isAssignableFrom(type);
   }
 
