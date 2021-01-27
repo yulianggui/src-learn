@@ -18,6 +18,7 @@ package org.apache.ibatis.reflection.property;
 import java.util.Iterator;
 
 /**
+ * 属性分词器
  * @author Clinton Begin
  */
 public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
@@ -26,19 +27,35 @@ public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
   private String index;
   private final String children;
 
+  /**
+   * 1、user.dept
+   * 2、user.dept[0].name 两种情况。index=0
+   * 3、map[key]，则index=key
+   * 属性全名称解析
+   * @param fullname 全名称
+   */
   public PropertyTokenizer(String fullname) {
+    // 第一个 .
     int delim = fullname.indexOf('.');
     if (delim > -1) {
+      // 名字
       name = fullname.substring(0, delim);
+      // 子节点名称，后续可能还是复合型
       children = fullname.substring(delim + 1);
     } else {
+      // 否则没有子节点
       name = fullname;
       children = null;
     }
+    // index+name 即比如 name[0]  name=name index=0
+    // map[id] name=map,index=id
     indexedName = name;
+    // 索引
     delim = name.indexOf('[');
     if (delim > -1) {
+      // 得到索引的值，比如 name[0] 为 0
       index = name.substring(delim + 1, name.length() - 1);
+      // 得到[] 前面的名称， 比如name
       name = name.substring(0, delim);
     }
   }
@@ -64,6 +81,10 @@ public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
     return children != null;
   }
 
+  /**
+   * 解析下一个节点
+   * @return 返回值。这里很巧妙啊，多看源码果然是有好处的
+   */
   @Override
   public PropertyTokenizer next() {
     return new PropertyTokenizer(children);

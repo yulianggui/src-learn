@@ -86,7 +86,7 @@ public class Reflector {
    */
   private Constructor<?> defaultConstructor;
   /**
-   * 记录所有set/get 方法名称的集合
+   * 记录所有set/get 属性的集合，
    * key - value
    * 属性名称转大写   属性名称
    */

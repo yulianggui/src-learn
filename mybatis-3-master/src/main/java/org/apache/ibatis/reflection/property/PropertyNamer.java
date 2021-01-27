@@ -20,6 +20,7 @@ import java.util.Locale;
 import org.apache.ibatis.reflection.ReflectionException;
 
 /**
+ * 反射属性名称解析
  * @author Clinton Begin
  */
 public final class PropertyNamer {
