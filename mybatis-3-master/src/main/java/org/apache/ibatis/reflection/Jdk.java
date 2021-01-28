@@ -18,6 +18,7 @@ package org.apache.ibatis.reflection;
 import org.apache.ibatis.io.Resources;
 
 /**
+ * 用来核查版本最低版本的吧
  * To check the existence of version dependent classes.
  */
 public class Jdk {

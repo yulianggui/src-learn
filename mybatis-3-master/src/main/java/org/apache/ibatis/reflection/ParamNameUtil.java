@@ -23,16 +23,37 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 参数名称工具
+ */
 public class ParamNameUtil {
+  /**
+   * 获取普通方法的参数列表名字
+   * @param method 方法
+   * @return 参数集合
+   */
   public static List<String> getParamNames(Method method) {
     return getParameterNames(method);
   }
 
+  /**
+   * 获取构造方法的参数列表
+   * @param constructor Constructor extends executable
+   * @return 返回参数字段名称
+   */
   public static List<String> getParamNames(Constructor<?> constructor) {
     return getParameterNames(constructor);
   }
 
+  /**
+   * Method extends Executable
+   * @param executable 获取方法参数的实现
+   * @return 返回参数列表
+   */
   private static List<String> getParameterNames(Executable executable) {
+    /**
+     * JDK 1.8 参数列表映射去名称
+     */
     return Arrays.stream(executable.getParameters()).map(Parameter::getName).collect(Collectors.toList());
   }
 

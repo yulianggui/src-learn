@@ -29,10 +29,16 @@ public class ExceptionUtil {
     // 阻止实例化
   }
 
+  /**
+   * unwrap 去掉异常的包装
+   * @param wrapped 被包装的异常
+   * @return 去掉包装后的异常
+   */
   public static Throwable unwrapThrowable(Throwable wrapped) {
     Throwable unwrapped = wrapped;
     while (true) {
       if (unwrapped instanceof InvocationTargetException) {
+        // 目标异常
         unwrapped = ((InvocationTargetException) unwrapped).getTargetException();
       } else if (unwrapped instanceof UndeclaredThrowableException) {
         unwrapped = ((UndeclaredThrowableException) unwrapped).getUndeclaredThrowable();

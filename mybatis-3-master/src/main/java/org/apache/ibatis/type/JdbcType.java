@@ -20,6 +20,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 一个枚举类型
+ *    对 Types 进行了封装
+ *    同时做了一些补充
+ *      ORACLE CURSOR 等
  * @author Clinton Begin
  */
 public enum JdbcType {

@@ -18,11 +18,16 @@ package org.apache.ibatis.reflection;
 import java.util.Arrays;
 
 /**
+ * 数据工具类
+ *   主要有 hashCode 和 equals 和 toString
+ *   最终还是调用 Arrays.hashCode | Arrays.equals | Arrays.toString
  * Provides hashCode, equals and toString methods that can handle array.
  */
 public class ArrayUtil {
 
   /**
+   * 返回hashCode
+   *  其实主要是处理 Object 为数组类型的
    * Returns a hash code for {@code obj}.
    *
    * @param obj
@@ -38,6 +43,7 @@ public class ArrayUtil {
     if (!clazz.isArray()) {
       return obj.hashCode();
     }
+    // 获取数组的 原生类型
     final Class<?> componentType = clazz.getComponentType();
     if (long.class.equals(componentType)) {
       return Arrays.hashCode((long[]) obj);
@@ -61,6 +67,7 @@ public class ArrayUtil {
   }
 
   /**
+   * 判断两个对象是否相等
    * Compares two objects. Returns <code>true</code> if
    * <ul>
    * <li>{@code thisObj} and {@code thatObj} are both <code>null</code></li>

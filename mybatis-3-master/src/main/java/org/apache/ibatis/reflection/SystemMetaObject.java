@@ -21,12 +21,17 @@ import org.apache.ibatis.reflection.wrapper.DefaultObjectWrapperFactory;
 import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 
 /**
+ * 系统级别的MetaObject ，主要提供了 ObjectFactory 、ObjectWrapperFactory 、空的MetaObject 的单例
  * @author Clinton Begin
  */
 public final class SystemMetaObject {
 
   public static final ObjectFactory DEFAULT_OBJECT_FACTORY = new DefaultObjectFactory();
   public static final ObjectWrapperFactory DEFAULT_OBJECT_WRAPPER_FACTORY = new DefaultObjectWrapperFactory();
+  /**
+   * null 对象对应的单例对象
+   * 即传入的Object 为 null 时
+   */
   public static final MetaObject NULL_META_OBJECT = MetaObject.forObject(NullObject.class, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY, new DefaultReflectorFactory());
 
   private SystemMetaObject() {
@@ -36,6 +41,11 @@ public final class SystemMetaObject {
   private static class NullObject {
   }
 
+  /**
+   * 核心方法
+   * @param object 指定创建传入对象的 MetaObject
+   * @return 返回MetaObject
+   */
   public static MetaObject forObject(Object object) {
     return MetaObject.forObject(object, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY, new DefaultReflectorFactory());
   }

@@ -49,18 +49,42 @@ import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * TypeHandler 注册器
  * @author Clinton Begin
  * @author Kazuki Shimizu
  */
 public final class TypeHandlerRegistry {
 
+  /**
+   * 记录JdbcType 与 TypeHandler 之间的关系，其中JdbcType 是一个枚举类型，它定义了对应的JDBC 类型
+   * 该集合主要用于从结果集读取数据时，将数据从JDBC 类型转换成为JAVA 类型
+   */
   private final Map<JdbcType, TypeHandler<?>>  jdbcTypeHandlerMap = new EnumMap<>(JdbcType.class);
+  /**
+   * 记录了JAVA 类型向指定JdbcType 转换时，需要使用的 TypeHandler 对象。 例如： Java 类型中的String 可能
+   * 转换成数据库中的 char 、varchar 等多种类型，所以存在一对多的关心
+   *   String： {
+   *     char -- CharTypeHandler
+   *     varchar -- VarcharTypeHandler
+   *   }
+   */
   private final Map<Type, Map<JdbcType, TypeHandler<?>>> typeHandlerMap = new ConcurrentHashMap<>();
+  /**
+   * 未知的处理类型
+   */
   private final TypeHandler<Object> unknownTypeHandler;
+  /**
+   * 记录全部TypeHandler 的类型以及该类型相应的TypeHandler 对象
+   */
   private final Map<Class<?>, TypeHandler<?>> allTypeHandlersMap = new HashMap<>();
-
+  /**
+   * 空 TypeHandler 集合的标识 ？？？ ?
+   */
   private static final Map<JdbcType, TypeHandler<?>> NULL_TYPE_HANDLER_MAP = Collections.emptyMap();
 
+  /**
+   * 默认的枚举类型处理器
+   */
   private Class<? extends TypeHandler> defaultEnumTypeHandler = EnumTypeHandler.class;
 
   /**
@@ -77,6 +101,7 @@ public final class TypeHandlerRegistry {
    * @since 3.5.4
    */
   public TypeHandlerRegistry(Configuration configuration) {
+    // 未知的类型？？？ 未知
     this.unknownTypeHandler = new UnknownTypeHandler(configuration);
 
     register(Boolean.class, new BooleanTypeHandler());
