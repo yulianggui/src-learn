@@ -40,12 +40,20 @@ public class BeanWrapper extends BaseWrapper {
     this.metaClass = MetaClass.forClass(object.getClass(), metaObject.getReflectorFactory());
   }
 
+  /**
+   * 调用 get 方法，获取属性的值
+   * @param prop 属性分词器，注意到这里，如果是直接到了 ObjectWrapper 中的get ，是指 PropertyTokenizer 已经没有 children 了
+   * @return 返回属性值
+   */
   @Override
   public Object get(PropertyTokenizer prop) {
     if (prop.getIndex() != null) {
+      // 如果是 dept[0] 这种类型，需要先拿到 dept object 中对应 dept 的值，如 Object = List<Dept>
       Object collection = resolveCollection(prop, object);
+      // 获取索引的值 如 return ((ArrayList)object)[0]
       return getCollectionValue(prop, collection);
     } else {
+      // 如果是 name 这种类型，没有索引
       return getBeanProperty(prop, object);
     }
   }
@@ -105,11 +113,17 @@ public class BeanWrapper extends BaseWrapper {
     }
   }
 
+  /**
+   * 是否存在 set|is 属性名称，方法 | 甚至是成员变量
+   * @param name 属性名称， 可以是 存在 children 的形式，会逐个解析
+   * @return 返回布尔类型
+   */
   @Override
   public boolean hasSetter(String name) {
     PropertyTokenizer prop = new PropertyTokenizer(name);
     if (prop.hasNext()) {
       if (metaClass.hasSetter(prop.getIndexedName())) {
+        // 如果该属性对应的set 方法，字段不存在，则 将 MetaObject 设置为 NULL_META_OBJECT，即 NULL 对象的MetaObject
         MetaObject metaValue = metaObject.metaObjectForProperty(prop.getIndexedName());
         if (metaValue == SystemMetaObject.NULL_META_OBJECT) {
           return metaClass.hasSetter(name);
@@ -148,6 +162,7 @@ public class BeanWrapper extends BaseWrapper {
     MetaObject metaValue;
     Class<?> type = getSetterType(prop.getName());
     try {
+      // 创建一个对象
       Object newObject = objectFactory.create(type);
       metaValue = MetaObject.forObject(newObject, metaObject.getObjectFactory(), metaObject.getObjectWrapperFactory(), metaObject.getReflectorFactory());
       set(prop, newObject);
@@ -157,6 +172,12 @@ public class BeanWrapper extends BaseWrapper {
     return metaValue;
   }
 
+  /**
+   * 找到属性对应的 get 方法，直接调用 Invoker，要么method ，要么field 的封装
+   * @param prop 属性分词器，到这里默认是没有 children 了
+   * @param object 对象，即会调用 对象 object 的 get 方法 ，相当于 object.getXXX() | object.xxx 成员变量
+   * @return 返回值
+   */
   private Object getBeanProperty(PropertyTokenizer prop, Object object) {
     try {
       Invoker method = metaClass.getGetInvoker(prop.getName());
@@ -172,6 +193,12 @@ public class BeanWrapper extends BaseWrapper {
     }
   }
 
+  /**
+   * 跟get 相似的逻辑
+   * @param prop 属性分词对象
+   * @param object 对象
+   * @param value 设置的值
+   */
   private void setBeanProperty(PropertyTokenizer prop, Object object, Object value) {
     try {
       Invoker method = metaClass.getSetInvoker(prop.getName());

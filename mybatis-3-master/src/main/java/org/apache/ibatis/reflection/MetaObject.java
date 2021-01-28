@@ -73,7 +73,7 @@ public class MetaObject {
       // 如果是一个Map
       this.objectWrapper = new MapWrapper(this, (Map) object);
     } else if (object instanceof Collection) {
-      // 如果是集合
+      // 如果是集合。 集合类型仅仅支持 [] 方式、添加元素等操作，不支持 get | set 方法
       this.objectWrapper = new CollectionWrapper(this, (Collection) object);
     } else {
       // 否则认为是普通Bean 对象
@@ -197,6 +197,7 @@ public class MetaObject {
           // 如果是 SystemMetaObject.NULL_META_OBJECT 这个类型，说明没找到相应的属性set 方法
           // 那么此时会利用 objectWrapper.instantiatePropertyValue(name, prop, objectFactory); 创建一个metaObject
           // 这里有困惑？? 为啥找不到了，还需要生成一个呢？待回头学习啊
+          // 属性名称对应的set|is 、字段找不到，但是 传过来的赋值对象又不为null ，那么就调用此方法
           metaValue = objectWrapper.instantiatePropertyValue(name, prop, objectFactory);
         }
       }

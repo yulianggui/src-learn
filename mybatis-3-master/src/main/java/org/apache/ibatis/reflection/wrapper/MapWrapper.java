@@ -36,12 +36,21 @@ public class MapWrapper extends BaseWrapper {
     this.map = map;
   }
 
+  /**
+   * 调用 get 方法，获取属性的值
+   * @param prop 属性分词器，注意到这里，如果是直接到了 ObjectWrapper 中的get ，是指 PropertyTokenizer 已经没有 children 了
+   * @return 返回属性值
+   */
   @Override
   public Object get(PropertyTokenizer prop) {
     if (prop.getIndex() != null) {
+      // 获取指定属性的值，找到索引值
+      // Map<String, Object> 的类型 deptMap[key], indexedName=deptMap[key],name=deptMap,index=key
       Object collection = resolveCollection(prop, map);
       return getCollectionValue(prop, collection);
     } else {
+      // 不存在索引
+      // Map<String, Object> 的类型，属性就是 key
       return map.get(prop.getName());
     }
   }
