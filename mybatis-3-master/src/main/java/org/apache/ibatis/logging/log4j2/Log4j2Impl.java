@@ -21,10 +21,13 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.spi.AbstractLogger;
 
 /**
+ * Log4j2Impl 是基础适配api 吧
+ * log4j2 不同版本的实现类也不大一样
  * @author Eduardo Macarron
  */
 public class Log4j2Impl implements Log {
 
+  // 注意这里还是 mybatis 的接口
   private final Log log;
 
   public Log4j2Impl(String clazz) {

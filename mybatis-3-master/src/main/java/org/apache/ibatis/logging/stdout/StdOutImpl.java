@@ -18,6 +18,10 @@ package org.apache.ibatis.logging.stdout;
 import org.apache.ibatis.logging.Log;
 
 /**
+ * 标准输出
+ * 即使用  System.err.println
+ *        e.printStackTrace 等方式
+ * 只能输出到控制台
  * @author Clinton Begin
  */
 public class StdOutImpl implements Log {

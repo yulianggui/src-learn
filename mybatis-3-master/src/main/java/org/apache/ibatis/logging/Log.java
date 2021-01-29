@@ -16,6 +16,12 @@
 package org.apache.ibatis.logging;
 
 /**
+ * 定义mybatis 的日志接口功能
+ * 并规定了Mybatis 的日志级别
+ *    不同的日志框架提供的日志级别不完全相同：
+ *        java.util.logging : ALL、FINEST、FINER、FINE、CONFIG、INFO、WARNING
+ *        Log4j2: trace、debug、info、warn、error、fatal
+ *    Mybatis 做了适配，合并
  * @author Clinton Begin
  */
 public interface Log {

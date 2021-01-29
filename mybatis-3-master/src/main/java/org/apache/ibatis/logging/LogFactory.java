@@ -17,7 +17,8 @@ package org.apache.ibatis.logging;
 
 import java.lang.reflect.Constructor;
 
-/**
+/**日志工厂
+ * 负责创建对应的日志组件适配器
  * @author Clinton Begin
  * @author Eduardo Macarron
  */
@@ -31,11 +32,15 @@ public final class LogFactory {
   private static Constructor<? extends Log> logConstructor;
 
   static {
+    // 尝试实例化 slf4 日志、useCommonsLogging 等
+    // 使用的是 JDK 8 的 语法，即()-> {setImplementation(org.apache.ibatis.logging.slf4j.Slf4jImpl.class);}
+    // 这里指 runnable 执行方法调用
     tryImplementation(LogFactory::useSlf4jLogging);
     tryImplementation(LogFactory::useCommonsLogging);
     tryImplementation(LogFactory::useLog4J2Logging);
     tryImplementation(LogFactory::useLog4JLogging);
     tryImplementation(LogFactory::useJdkLogging);
+    // 无日志
     tryImplementation(LogFactory::useNoLogging);
   }
 
@@ -88,22 +93,28 @@ public final class LogFactory {
   }
 
   private static void tryImplementation(Runnable runnable) {
+    // 如果为 null 才会继续解析
     if (logConstructor == null) {
       try {
+        // 是run,不是 start ，因此不会开启线程
         runnable.run();
       } catch (Throwable t) {
         // ignore
+        // setImplementation 报出来的异常，不理会
       }
     }
   }
 
   private static void setImplementation(Class<? extends Log> implClass) {
     try {
+      // 找到候选的构造函数。 implClass 这些都是 Log 的实现类
       Constructor<? extends Log> candidate = implClass.getConstructor(String.class);
+      // 实例化，传入工厂名称
       Log log = candidate.newInstance(LogFactory.class.getName());
       if (log.isDebugEnabled()) {
         log.debug("Logging initialized using '" + implClass + "' adapter.");
       }
+      // 找到了构造方法了
       logConstructor = candidate;
     } catch (Throwable t) {
       throw new LogException("Error setting Log implementation.  Cause: " + t, t);

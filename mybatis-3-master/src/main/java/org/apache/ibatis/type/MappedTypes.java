@@ -22,6 +22,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * 指定TypeHandler 可以处理那些 JavaType 类型
  * The annotation that specify java types to map {@link TypeHandler}.
  *
  * <p>

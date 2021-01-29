@@ -19,6 +19,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
+ *    1、实现现有的 Log (Mybatis)
+ *    2、持有Common 的Log
+ *    3、调用 Log .error ，真正调用的是 Common.log 实现类的 log.error
+ * 这里就是 CommonLogging 的包装
  * @author Clinton Begin
  */
 public class JakartaCommonsLoggingImpl implements org.apache.ibatis.logging.Log {

@@ -18,6 +18,7 @@ package org.apache.ibatis.logging.nologging;
 import org.apache.ibatis.logging.Log;
 
 /**
+ * 不做任何事情
  * @author Clinton Begin
  */
 public class NoLoggingImpl implements Log {

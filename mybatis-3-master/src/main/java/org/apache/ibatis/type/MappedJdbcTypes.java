@@ -22,6 +22,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ *
+ * 指明TypeHandler 可以处理那些 JDBC 类型
  * The annotation that specify jdbc types to map {@link TypeHandler}.
  *
  * <p>

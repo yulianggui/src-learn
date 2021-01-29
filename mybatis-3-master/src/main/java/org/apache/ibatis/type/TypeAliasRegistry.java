@@ -33,10 +33,15 @@ import org.apache.ibatis.io.ResolverUtil;
 import org.apache.ibatis.io.Resources;
 
 /**
+ * 别名注册器
  * @author Clinton Begin
  */
 public class TypeAliasRegistry {
 
+  /**
+   * 别名缓存
+   *  configuration 持有
+   */
   private final Map<String, Class<?>> typeAliases = new HashMap<>();
 
   public TypeAliasRegistry() {
@@ -108,6 +113,7 @@ public class TypeAliasRegistry {
         return null;
       }
       // issue #748
+      // 转小写
       String key = string.toLowerCase(Locale.ENGLISH);
       Class<T> value;
       if (typeAliases.containsKey(key)) {
@@ -125,6 +131,11 @@ public class TypeAliasRegistry {
     registerAliases(packageName, Object.class);
   }
 
+  /**
+   * 注册别名
+   * @param packageName 报名称
+   * @param superType 父类，即包下的类必须是 superType 的子类或者该类； 可以指定某些类
+   */
   public void registerAliases(String packageName, Class<?> superType) {
     ResolverUtil<Class<?>> resolverUtil = new ResolverUtil<>();
     resolverUtil.find(new ResolverUtil.IsA(superType), packageName);
@@ -138,6 +149,10 @@ public class TypeAliasRegistry {
     }
   }
 
+  /**
+   * 注册
+   * @param type
+   */
   public void registerAlias(Class<?> type) {
     String alias = type.getSimpleName();
     Alias aliasAnnotation = type.getAnnotation(Alias.class);
@@ -147,6 +162,11 @@ public class TypeAliasRegistry {
     registerAlias(alias, type);
   }
 
+  /**
+   * 注册别名
+   * @param alias 别名
+   * @param value 对应的Class
+   */
   public void registerAlias(String alias, Class<?> value) {
     if (alias == null) {
       throw new TypeException("The parameter alias cannot be null");
