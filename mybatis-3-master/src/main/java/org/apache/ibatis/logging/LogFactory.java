@@ -52,6 +52,11 @@ public final class LogFactory {
     return getLog(clazz.getName());
   }
 
+  /**
+   * 获取日志类信息
+   * @param logger 日志类
+   * @return 返回值
+   */
   public static Log getLog(String logger) {
     try {
       return logConstructor.newInstance(logger);
@@ -60,6 +65,10 @@ public final class LogFactory {
     }
   }
 
+  /**
+   * 使用用户定义的 日志类
+   * @param clazz clazz
+   */
   public static synchronized void useCustomLogging(Class<? extends Log> clazz) {
     setImplementation(clazz);
   }

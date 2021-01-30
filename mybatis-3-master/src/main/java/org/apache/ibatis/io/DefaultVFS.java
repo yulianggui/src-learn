@@ -44,6 +44,7 @@ public class DefaultVFS extends VFS {
   private static final Log log = LogFactory.getLog(DefaultVFS.class);
 
   /** The magic header that indicates a JAR (ZIP) file. */
+  // jar 魔法头部
   private static final byte[] JAR_MAGIC = { 'P', 'K', 3, 4 };
 
   @Override
@@ -59,16 +60,21 @@ public class DefaultVFS extends VFS {
 
       // First, try to find the URL of a JAR file containing the requested resource. If a JAR
       // file is found, then we'll list child resources by reading the JAR.
+      // 首先，尝试去找到 JAR 文件中 找到 URL 指定的资源，返回 jar 协议的 URL
+      // 如果找到，就去从JAR 包中解析，找不到返回NULL
       URL jarUrl = findJarForResource(url);
       if (jarUrl != null) {
+        // 打卡二进制文件流，jar 包
         is = jarUrl.openStream();
         if (log.isDebugEnabled()) {
           log.debug("Listing " + url);
         }
+        // 遍历JAR 包，返回 path 指定路径开头的资源列表。装饰器模式封装为 Jar 二进制
         resources = listResources(new JarInputStream(is), path);
       } else {
         List<String> children = new ArrayList<>();
         try {
+          // 是 jar 包
           if (isJar(url)) {
             // Some versions of JBoss VFS might give a JAR stream even if the resource
             // referenced by the URL isn't actually a JAR
@@ -188,6 +194,7 @@ public class DefaultVFS extends VFS {
     // Iterate over the entries and collect those that begin with the requested path
     List<String> resources = new ArrayList<>();
     for (JarEntry entry; (entry = jar.getNextJarEntry()) != null;) {
+      // 如果不是目录
       if (!entry.isDirectory()) {
         // Add leading slash if it's missing
         StringBuilder name = new StringBuilder(entry.getName());
@@ -209,6 +216,8 @@ public class DefaultVFS extends VFS {
   }
 
   /**
+   * deconstruct 解析：
+   * assuming： 假设
    * Attempts to deconstruct the given URL to find a JAR file containing the resource referenced
    * by the URL. That is, assuming the URL references a JAR entry, this method will return a URL
    * that references the JAR file containing the entry. If the JAR cannot be located, then this
@@ -225,23 +234,28 @@ public class DefaultVFS extends VFS {
     }
 
     // If the file part of the URL is itself a URL, then that URL probably points to the JAR
+    // 如果URL的文件部分本身是URL，则该URL可能指向JAR
     boolean continueLoop = true;
     while (continueLoop) {
       try {
+
         url = new URL(url.getFile());
         if (log.isDebugEnabled()) {
           log.debug("Inner URL: " + url);
         }
       } catch (MalformedURLException e) {
+        // 格式错误异常，退出循环
         // This will happen at some point and serves as a break in the loop
         continueLoop = false;
       }
     }
 
     // Look for the .jar extension and chop off everything after that
+    // 扩展格式，后缀
     StringBuilder jarUrl = new StringBuilder(url.toExternalForm());
     int index = jarUrl.lastIndexOf(".jar");
     if (index >= 0) {
+      // 截取到 xxxx.jar ，稳稳可能 jar 后面包含了 path
       jarUrl.setLength(index + 4);
       if (log.isDebugEnabled()) {
         log.debug("Extracted JAR URL: " + jarUrl);
@@ -254,6 +268,7 @@ public class DefaultVFS extends VFS {
     }
 
     // Try to open and test it
+    // 尝试打开 url 并且测试是否为 jar 文件格式
     try {
       URL testUrl = new URL(jarUrl.toString());
       if (isJar(testUrl)) {

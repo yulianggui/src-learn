@@ -24,21 +24,56 @@ import java.sql.SQLException;
 import org.apache.ibatis.reflection.ExceptionUtil;
 
 /**
+ * Connection 动态代理
  * @author Clinton Begin
  */
 class PooledConnection implements InvocationHandler {
 
   private static final String CLOSE = "close";
+  /**
+   * 如果不是Object 中定义的方法
+   * 动态代理需要用到
+   */
   private static final Class<?>[] IFACES = new Class<?>[] { Connection.class };
 
+  /**
+   * 真正的数据源的 connection.hashCode()
+   */
   private final int hashCode;
+  /**
+   * 数据库连接池
+   */
   private final PooledDataSource dataSource;
+  /**
+   * 真正的连接
+   */
   private final Connection realConnection;
+  /**
+   * 动态代理的连接
+   */
   private final Connection proxyConnection;
+  /**
+   * 从连接池中获取改连接的时间戳
+   *  即在连接池中获取该连接的时间
+   */
   private long checkoutTimestamp;
+  /**
+   * 该连接创见的时间戳
+   */
   private long createdTimestamp;
+  /**
+   * 该连接最后一次被使用时间戳
+   */
   private long lastUsedTimestamp;
+  /**
+   * 用URL、用户名和密码计算出来的hash 值，用来标识该连接所在的连接池
+   * PooledDataSource#expectedConnectionTypeCode
+   */
   private int connectionTypeCode;
+  /**
+   * 检测当前 PooledConnection 是否有效
+   * 主要是为了防止程序通过 close() 方法将连接归还给连接池之后，依然通过连接操作数据库
+   */
   private boolean valid;
 
   /**
@@ -212,7 +247,7 @@ class PooledConnection implements InvocationHandler {
 
   /**
    * Allows comparing this connection to another.
-   *
+   * 允许和其他的Connection 进行比较
    * @param obj
    *          - the other connection to test for equality
    * @see Object#equals(Object)
@@ -220,6 +255,7 @@ class PooledConnection implements InvocationHandler {
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof PooledConnection) {
+      // 对比真实的 hashCode
       return realConnection.hashCode() == ((PooledConnection) obj).realConnection.hashCode();
     } else if (obj instanceof Connection) {
       return hashCode == obj.hashCode();
@@ -242,14 +278,21 @@ class PooledConnection implements InvocationHandler {
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
     String methodName = method.getName();
+    // 如果调用了close 方法
     if (CLOSE.equals(methodName)) {
+      // 把当前连接还回到数据连接池，因此需要动态代理
+      // 在成功放回到数据库连接池之后，会在连接池中将 isValid = false
       dataSource.pushConnection(this);
       return null;
     }
     try {
+
       if (!Object.class.equals(method.getDeclaringClass())) {
         // issue #579 toString() should never fail
         // throw an SQLException instead of a Runtime
+
+        // 如果不是Object 中定义的方法
+        // 检测当前的连接是否有效，没有就抛出异常，防止继续使用该Connection
         checkConnection();
       }
       return method.invoke(realConnection, args);

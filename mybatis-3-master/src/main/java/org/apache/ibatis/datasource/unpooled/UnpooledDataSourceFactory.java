@@ -25,13 +25,24 @@ import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.SystemMetaObject;
 
 /**
+ * 不使用现成池的方式
  * @author Clinton Begin
  */
 public class UnpooledDataSourceFactory implements DataSourceFactory {
 
+  /**
+   * 驱动属性前缀
+   */
   private static final String DRIVER_PROPERTY_PREFIX = "driver.";
+
+  /**
+   * 驱动属性前缀字符长度
+   */
   private static final int DRIVER_PROPERTY_PREFIX_LENGTH = DRIVER_PROPERTY_PREFIX.length();
 
+  /**
+   * 数据源  在构造返回中初始化
+   */
   protected DataSource dataSource;
 
   public UnpooledDataSourceFactory() {
@@ -41,14 +52,20 @@ public class UnpooledDataSourceFactory implements DataSourceFactory {
   @Override
   public void setProperties(Properties properties) {
     Properties driverProperties = new Properties();
+    // 得到dataSource 的MetaObject 对象，方便设置 dataSource 相应的set 属性
     MetaObject metaDataSource = SystemMetaObject.forObject(dataSource);
     for (Object key : properties.keySet()) {
       String propertyName = (String) key;
+      // 如果属性以 driver. 开头
       if (propertyName.startsWith(DRIVER_PROPERTY_PREFIX)) {
+        // 获取属性值
         String value = properties.getProperty(propertyName);
+        // 添加属性值，截取 driver 后面的字符串作为 key
         driverProperties.setProperty(propertyName.substring(DRIVER_PROPERTY_PREFIX_LENGTH), value);
       } else if (metaDataSource.hasSetter(propertyName)) {
+        // 否则如果 dataSource 中存在 属性对应的set 方法 ，比如 jdbc.
         String value = (String) properties.get(propertyName);
+        // 属性值转换 Boolean、Integer、Long
         Object convertedValue = convertValue(metaDataSource, propertyName, value);
         metaDataSource.setValue(propertyName, convertedValue);
       } else {

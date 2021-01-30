@@ -19,17 +19,38 @@ import java.io.InputStream;
 import java.net.URL;
 
 /**
+ * 类加载器 ClassLoader 的包装器
+ *   其中包含多个ClassLoader 对象，通过调整多个类加载器的使用顺序，ClassLoaderWrapper 可以确保返回给系统使用
+ *   的是正确的类加载器。使用ClassLoaderWrapper 就如同使用一个ClassLoader 对象，ClassLoaderWrapper 会按
+ *   照指定的顺序依次检测其中封装的 ClassLoader 对象，并从中选取第一个可用的ClassLoader 完成相关功能
+ *
+ * ClassLoaderWrapper 的主要功能可以分为三大类：
+ *   分别是：
+ *     getResourceAsURL
+ *     classForName
+ *     getResourceAdStream
+ *   三个方法经过解析逻辑之后，都会调用参数为String[] 的ClassLoader[] 的重载
+ *
+ *
  * A class to wrap access to multiple class loaders making them work as one
  *
  * @author Clinton Begin
  */
 public class ClassLoaderWrapper {
 
+  /**
+   * 默认的类加载器，这个是用户指定的
+   */
   ClassLoader defaultClassLoader;
+  /**
+   * 系统加载器， Application 类加载器
+   * 即 classpath 类路径下的类加载器
+   */
   ClassLoader systemClassLoader;
 
   ClassLoaderWrapper() {
     try {
+      // 初始化字段，其实很简单，就是通过ClassLoader 拿到 SystemClassLoader 对象
       systemClassLoader = ClassLoader.getSystemClassLoader();
     } catch (SecurityException ignored) {
       // AccessControlException on Google App Engine
@@ -139,21 +160,28 @@ public class ClassLoaderWrapper {
 
     URL url;
 
+    /**
+     * 遍历所有的类加载器进行加载，如果有一个成功解析到 url ，则返回了
+     */
     for (ClassLoader cl : classLoader) {
 
       if (null != cl) {
 
         // look for the resource as passed in...
+        // 调用 ClassLoader.getResource() 方法查找指定的资源
+        // 可以解析很多中协议，暂时没有深入了解
         url = cl.getResource(resource);
 
         // ...but some class loaders want this leading "/", so we'll add it
         // and try again if we didn't find the resource
+        // 如果找不到，加上 / 继续找
         if (null == url) {
           url = cl.getResource("/" + resource);
         }
 
         // "It's always in the last place I look for it!"
         // ... because only an idiot would keep looking for it after finding it, so stop looking already.
+        // 找到了就返回了
         if (null != url) {
           return url;
         }
@@ -182,7 +210,7 @@ public class ClassLoaderWrapper {
       if (null != cl) {
 
         try {
-
+          // 尝试加载类
           return Class.forName(name, true, cl);
 
         } catch (ClassNotFoundException e) {
@@ -197,6 +225,17 @@ public class ClassLoaderWrapper {
 
   }
 
+  /**
+   * 返回所有的类加载器
+   * 1、参数传入的
+   * 2、defaultClassLoader
+   * 3、当前现成上下文的类加载器
+   * 4、加载当前class 的类加载器
+   * 5、classpath 类加载器
+   *
+   * @param classLoader 参数传入的类加载器
+   * @return 返回所有的类加载器
+   */
   ClassLoader[] getClassLoaders(ClassLoader classLoader) {
     return new ClassLoader[]{
         classLoader,

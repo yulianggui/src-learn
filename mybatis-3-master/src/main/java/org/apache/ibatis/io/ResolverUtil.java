@@ -25,6 +25,8 @@ import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 
 /**
+ *  可以根据指定的条件查找指定包下的类，其中使用的条件有Test 接口表示，Test 有个Match 的api
+ *
  * <p>ResolverUtil is used to locate classes that are available in the/a class path and meet
  * arbitrary conditions. The two most common conditions are that a class implements/extends
  * another class, or that is it annotated with a specific annotation. However, through the use
@@ -82,6 +84,8 @@ public class ResolverUtil<T> {
   }
 
   /**
+   * 用于检测类是否继承了指定的类或者接口
+   * 即 is a 的问题
    * A Test that checks to see if each class is assignable to the provided class. Note
    * that this test will match the parent type itself if it is presented for matching.
    */
@@ -97,12 +101,14 @@ public class ResolverUtil<T> {
      *          the parent type
      */
     public IsA(Class<?> parentType) {
+      // 指定的父类型
       this.parent = parentType;
     }
 
     /** Returns true if type is assignable to the parent type supplied in the constructor. */
     @Override
     public boolean matches(Class<?> type) {
+      // 最终还是调用反射的方法。 parent 是否是 type 的父类
       return type != null && parent.isAssignableFrom(type);
     }
 
@@ -113,6 +119,7 @@ public class ResolverUtil<T> {
   }
 
   /**
+   * 是否添加了某个注解
    * A Test that checks to see if each class is annotated with a specific annotation. If it
    * is, then the test returns true, otherwise false.
    */
@@ -144,9 +151,16 @@ public class ResolverUtil<T> {
   }
 
   /** The set of matches being accumulated. */
+  /**
+   * 存放匹配到的 Class
+   */
   private Set<Class<? extends T>> matches = new HashSet<>();
 
   /**
+   * 类加载器
+   *   如果不指定，会使用 Thread.currentThread().getContextClassLoader() 这个类加载器加载
+   *   复合条件的类
+   * 可以通过调优ClassLoader 设置，当然可以从ClassLoaderWrapper 中获取更合适的类加载器
    * The ClassLoader to use when looking for classes. If null then the ClassLoader returned
    * by Thread.currentThread().getContextClassLoader() will be used.
    */
@@ -183,6 +197,8 @@ public class ResolverUtil<T> {
   }
 
   /**
+   * 扫描 parent 的类或者其子类
+   * 包名称。可以传入多个
    * Attempts to discover classes that are assignable to the type provided. In the case
    * that an interface is provided this method will collect implementations. In the case
    * of a non-interface class, subclasses will be collected.  Accumulated classes can be
@@ -246,6 +262,7 @@ public class ResolverUtil<T> {
     String path = getPackagePath(packageName);
 
     try {
+      // VFS 得到当前 包下的所有 类型 .class ，包括子包
       List<String> children = VFS.getInstance().list(path);
       for (String child : children) {
         if (child.endsWith(".class")) {
@@ -281,6 +298,9 @@ public class ResolverUtil<T> {
   @SuppressWarnings("unchecked")
   protected void addIfMatching(Test test, String fqn) {
     try {
+      // fqn ，此时为 ： org/apache/ibatis/io/ResolverUtil.java
+      // 其实已经是类的全限定名称成
+      // 如： org.apache.ibatis.io.ResolverUtil.java
       String externalName = fqn.substring(0, fqn.indexOf('.')).replace('/', '.');
       ClassLoader loader = getClassLoader();
       if (log.isDebugEnabled()) {

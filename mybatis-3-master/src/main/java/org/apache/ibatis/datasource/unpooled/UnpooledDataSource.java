@@ -33,13 +33,24 @@ import javax.sql.DataSource;
 import org.apache.ibatis.io.Resources;
 
 /**
+ * 没有线程池的数据源
  * @author Clinton Begin
  * @author Eduardo Macarron
  */
 public class UnpooledDataSource implements DataSource {
 
+  /**
+   * 驱动类加载器
+   */
   private ClassLoader driverClassLoader;
+  /**
+   * 驱动信息属性
+   */
   private Properties driverProperties;
+  /**
+   *  Driver 驱动缓存
+   *  缓存所有已经注册的数据库驱动
+   */
   private static Map<String, Driver> registeredDrivers = new ConcurrentHashMap<>();
 
   private String driver;
@@ -47,14 +58,29 @@ public class UnpooledDataSource implements DataSource {
   private String username;
   private String password;
 
+  /**
+   * 是否自动提交
+   */
   private Boolean autoCommit;
+  /**
+   * 默认的事务隔离层级
+   */
   private Integer defaultTransactionIsolationLevel;
+  /**
+   * 默认的网络超时
+   */
   private Integer defaultNetworkTimeout;
 
+  /**
+   *
+   */
   static {
+    // 获取DriverManager 中已经注册的驱动
     Enumeration<Driver> drivers = DriverManager.getDrivers();
+    // 遍历驱动
     while (drivers.hasMoreElements()) {
       Driver driver = drivers.nextElement();
+      // 缓存
       registeredDrivers.put(driver.getClass().getName(), driver);
     }
   }
@@ -90,6 +116,11 @@ public class UnpooledDataSource implements DataSource {
     this.driverProperties = driverProperties;
   }
 
+  /**
+   * 获取Connection 链接
+   * @return 返回Connection
+   * @throws SQLException 抛出异常
+   */
   @Override
   public Connection getConnection() throws SQLException {
     return doGetConnection(username, password);
@@ -205,6 +236,13 @@ public class UnpooledDataSource implements DataSource {
     this.defaultNetworkTimeout = defaultNetworkTimeout;
   }
 
+  /**
+   * 创建Connection
+   * @param username 用户名
+   * @param password 密码
+   * @return
+   * @throws SQLException
+   */
   private Connection doGetConnection(String username, String password) throws SQLException {
     Properties props = new Properties();
     if (driverProperties != null) {
@@ -220,16 +258,26 @@ public class UnpooledDataSource implements DataSource {
   }
 
   private Connection doGetConnection(Properties properties) throws SQLException {
+    // 初始化注册Driver，注册驱动
     initializeDriver();
+    // 获取链接信息
     Connection connection = DriverManager.getConnection(url, properties);
+    // 完成数据库链接的一系列信息，比如设置事务隔离级别
+    // 事务是否自动提交、超时时长
     configureConnection(connection);
     return connection;
   }
 
+  /**
+   * 初始化驱动
+   * @throws SQLException
+   */
   private synchronized void initializeDriver() throws SQLException {
+    // 如果驱动还没有注册， 如果当前需要注册的驱动信息已经存在了 driver，就不需要处理了
     if (!registeredDrivers.containsKey(driver)) {
       Class<?> driverType;
       try {
+        // 注册驱动，注册成功，即将对应驱动的Class 进行加载到 JVM 中
         if (driverClassLoader != null) {
           driverType = Class.forName(driver, true, driverClassLoader);
         } else {
@@ -237,8 +285,12 @@ public class UnpooledDataSource implements DataSource {
         }
         // DriverManager requires the driver to be loaded via the system ClassLoader.
         // http://www.kfu.com/~nsayer/Java/dyn-jdbc.html
+        // 创建 Driver 对象
         Driver driverInstance = (Driver) driverType.getDeclaredConstructor().newInstance();
+        // 同时将静态代理类注册到 DriverManager 中
+        // 这样 DriverManager.getConnection(); 使用的Driver 就是 DriverProxy 代理对象
         DriverManager.registerDriver(new DriverProxy(driverInstance));
+        // 自身缓存一份 Driver 实例
         registeredDrivers.put(driver, driverInstance);
       } catch (Exception e) {
         throw new SQLException("Error setting driver on UnpooledDataSource. Cause: " + e);
@@ -246,13 +298,20 @@ public class UnpooledDataSource implements DataSource {
     }
   }
 
+  /**
+   * 完成数据库链接的一系列配置
+   * @param conn 链接信息
+   * @throws SQLException
+   */
   private void configureConnection(Connection conn) throws SQLException {
     if (defaultNetworkTimeout != null) {
       conn.setNetworkTimeout(Executors.newSingleThreadExecutor(), defaultNetworkTimeout);
     }
+    // 设置事务是否自动提交
     if (autoCommit != null && autoCommit != conn.getAutoCommit()) {
       conn.setAutoCommit(autoCommit);
     }
+    // 设置事务隔离级别
     if (defaultTransactionIsolationLevel != null) {
       conn.setTransactionIsolation(defaultTransactionIsolationLevel);
     }
