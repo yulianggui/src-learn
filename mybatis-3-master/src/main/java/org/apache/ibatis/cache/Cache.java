@@ -42,6 +42,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 public interface Cache {
 
   /**
+   * 缓存对象ID
    * @return The identifier of this cache
    */
   String getId();
@@ -91,6 +92,7 @@ public interface Cache {
   int getSize();
 
   /**
+   * 获取读写锁，该方法不被Mybatis 核心代码使用，所以可提供空实现
    * Optional. As of 3.2.6 this method is no longer called by the core.
    * <p>
    * Any locking needed by the cache must be provided internally by the cache provider.

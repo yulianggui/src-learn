@@ -22,12 +22,20 @@ import org.apache.ibatis.cache.Cache;
 import org.apache.ibatis.cache.CacheException;
 
 /**
+ * Cache 的基本实现
+ * 在装饰器模式中，扮演 ConcreteComponent 角色
+ *
+ * 而 decorators 中的实现类都是装饰器的身份 ： ConcreteDecorator
+ *
  * @author Clinton Begin
  */
 public class PerpetualCache implements Cache {
 
   private final String id;
 
+  /**
+   * 缓存存放的地方
+   */
   private final Map<Object, Object> cache = new HashMap<>();
 
   public PerpetualCache(String id) {

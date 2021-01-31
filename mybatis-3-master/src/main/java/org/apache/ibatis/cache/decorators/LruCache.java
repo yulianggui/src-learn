@@ -28,7 +28,13 @@ import org.apache.ibatis.cache.Cache;
 public class LruCache implements Cache {
 
   private final Cache delegate;
+  /**
+   * 他是一个 LinkedHashMap 有序的HashMap ，用于记录Key 最近的使用情况
+   */
   private Map<Object, Object> keyMap;
+  /**
+   * 记录最少使用的 key
+   */
   private Object eldestKey;
 
   public LruCache(Cache delegate) {
@@ -46,12 +52,24 @@ public class LruCache implements Cache {
     return delegate.getSize();
   }
 
+  /**
+   * 默认缓存大小是 1024
+   * 通过 setSize 方法重新设计缓存大小
+   * @param size 大小
+   */
   public void setSize(final int size) {
+    /**
+     * 新建一个了
+     * LinkedHashMap 构造函数的第三个参数， true 表示该 LinkedHashMap 记录的顺序是 access-order ，也就是
+     * 说 LinkedHashMap.git() 方法会改变其记录的顺序
+     */
     keyMap = new LinkedHashMap<Object, Object>(size, .75F, true) {
       private static final long serialVersionUID = 4267176411845948333L;
 
+      // 当调用 LinkedHashMap.put 方法时，会调用该方法
       @Override
       protected boolean removeEldestEntry(Map.Entry<Object, Object> eldest) {
+        // 是否到到了缓存的上线，如果是，则更新 eldestKay 字段，后面会删除该项
         boolean tooBig = size() > size;
         if (tooBig) {
           eldestKey = eldest.getKey();

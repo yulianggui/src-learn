@@ -29,6 +29,9 @@ public class FifoCache implements Cache {
 
   private final Cache delegate;
   private final Deque<Object> keyList;
+  /**
+   * 记住这个 1024 ，队列的最多长度
+   */
   private int size;
 
   public FifoCache(Cache delegate) {
