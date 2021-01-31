@@ -374,7 +374,7 @@ public class PooledDataSource implements DataSource {
           conn.invalidate();
           // 得到真实的连接
           Connection realConn = conn.getRealConnection();
-          // 如果没有设置自动提交。 回滚掉
+          // 如果没有设置自动提交。且当前事务还没有提交，则回滚掉
           if (!realConn.getAutoCommit()) {
             realConn.rollback();
           }
@@ -437,7 +437,7 @@ public class PooledDataSource implements DataSource {
         if (state.idleConnections.size() < poolMaximumIdleConnections && conn.getConnectionTypeCode() == expectedConnectionTypeCode) {
           // 连接使用时间累加
           state.accumulatedCheckoutTime += conn.getCheckoutTime();
-          // mybatis 并不会提交事务处理，将会默认回滚，即 autoCommit 为 false 时，如果为 true，则交由用户手动回滚
+          // mybatis 并不会提交事务处理，将会默认回滚，即 autoCommit 为 false 时，如果为 true，则交mybatis 会自动提交
           // 回滚未提交的事务。 -- rollback 要在 commit 之前执行才能回滚
           if (!conn.getRealConnection().getAutoCommit()) {
             conn.getRealConnection().rollback();

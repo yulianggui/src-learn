@@ -47,6 +47,8 @@ public class MapperRegistry {
       throw new BindingException("Type " + type + " is not known to the MapperRegistry.");
     }
     try {
+      // 创建Mapper 接口的代理对象 。 mapperProxyFactory 中已经有 type 接口的信息了
+      // 返回的是 MapperProxy 这个 handler，是 type 这个接口的动态代理的 Invoke 入口
       return mapperProxyFactory.newInstance(sqlSession);
     } catch (Exception e) {
       throw new BindingException("Error getting mapper instance. Cause: " + e, e);

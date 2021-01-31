@@ -24,6 +24,7 @@ import org.apache.ibatis.transaction.Transaction;
 import org.apache.ibatis.transaction.TransactionFactory;
 
 /**
+ * 创建 JdbcTransaction
  * Creates {@link JdbcTransaction} instances.
  *
  * @author Clinton Begin

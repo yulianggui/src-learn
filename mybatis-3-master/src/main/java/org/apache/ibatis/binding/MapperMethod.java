@@ -39,6 +39,8 @@ import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.session.SqlSession;
 
 /**
+ * 映射方法
+ * Mapper 和 sql 中的映射关心就是这里解析之后使用该对象描述
  * @author Clinton Begin
  * @author Eduardo Macarron
  * @author Lasse Voss
@@ -46,7 +48,16 @@ import org.apache.ibatis.session.SqlSession;
  */
 public class MapperMethod {
 
+  /**
+   * sql 封装的类
+   * 记录了sql 语句的名称和类型 （增删改查）
+   *   name: sql 语句的名称
+   *   type: 增删改查、flush
+   */
   private final SqlCommand command;
+  /**
+   * 方法签名
+   */
   private final MethodSignature method;
 
   public MapperMethod(Class<?> mapperInterface, Method method, Configuration config) {
@@ -259,7 +270,10 @@ public class MapperMethod {
       } else if (mapperInterface.equals(declaringClass)) {
         return null;
       }
+      // 当前mapperInterface 的所有接口。可能传入的是一个实现类？？
+      // 指定的方法是在父结构中定义的
       for (Class<?> superInterface : mapperInterface.getInterfaces()) {
+        // 方法声明的类是 superInterface 的父类
         if (declaringClass.isAssignableFrom(superInterface)) {
           MappedStatement ms = resolveMappedStatement(superInterface, methodName,
               declaringClass, configuration);
