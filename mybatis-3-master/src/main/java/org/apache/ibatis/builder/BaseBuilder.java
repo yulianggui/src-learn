@@ -29,6 +29,11 @@ import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
 /**
+ * mybatis 中基础的builder 对象
+ * 持有： configuration 对象
+ *       typeAliasRegistry 别名注册器
+ *       TypeHandlerRegistry TypeHandler 注册器
+ *  typeAliasRegistry 、TypeHandlerRegistry 均为 Configuration 对象中取出来的
  * @author Clinton Begin
  */
 public abstract class BaseBuilder {
@@ -46,6 +51,12 @@ public abstract class BaseBuilder {
     return configuration;
   }
 
+  /**
+   * 获取正则表达式 Pattern 对象
+   * @param regex 正则表达式
+   * @param defaultValue 默认的值
+   * @return 返回Pattern 对象
+   */
   protected Pattern parseExpression(String regex, String defaultValue) {
     return Pattern.compile(regex == null ? defaultValue : regex);
   }
@@ -63,6 +74,12 @@ public abstract class BaseBuilder {
     return new HashSet<>(Arrays.asList(value.split(",")));
   }
 
+  /**
+   * 根据名称，从JdbcType 枚举对象中获取JdbcType 类型的对象 解析 Jdbc 类型
+   * 原始的 名称，要和JdbcType 的各项名相等
+   * @param alias 别名
+   * @return 返回JdbcType
+   */
   protected JdbcType resolveJdbcType(String alias) {
     if (alias == null) {
       return null;
@@ -85,6 +102,9 @@ public abstract class BaseBuilder {
     }
   }
 
+  /**
+   * 表示的是 存储过程中的参数类型
+   */
   protected ParameterMode resolveParameterMode(String alias) {
     if (alias == null) {
       return null;
@@ -96,6 +116,11 @@ public abstract class BaseBuilder {
     }
   }
 
+  /**
+   * 根据别名实例化对象
+   * @param alias 别名
+   * @return 返回对象
+   */
   protected Object createInstance(String alias) {
     Class<?> clazz = resolveClass(alias);
     if (clazz == null) {

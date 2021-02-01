@@ -229,6 +229,7 @@ public class Configuration {
   public void setLogImpl(Class<? extends Log> logImpl) {
     if (logImpl != null) {
       this.logImpl = logImpl;
+      // 如果配置了，则进行初始化
       LogFactory.useCustomLogging(this.logImpl);
     }
   }

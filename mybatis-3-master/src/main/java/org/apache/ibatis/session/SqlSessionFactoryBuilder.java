@@ -26,6 +26,8 @@ import org.apache.ibatis.executor.ErrorContext;
 import org.apache.ibatis.session.defaults.DefaultSqlSessionFactory;
 
 /**
+ * SqlSessionFactory 工厂构建对象
+ * 构建者模式
  * Builds {@link SqlSession} instances.
  *
  * @author Clinton Begin
@@ -44,6 +46,14 @@ public class SqlSessionFactoryBuilder {
     return build(reader, null, properties);
   }
 
+  /**
+   * 所以的重载方法最终都要调用该方法
+   * 最终解析处理 Configuration 对象，然后构建出 DefaultSqlSessionFactory ，持有 Configuration
+   * @param reader mybatis-config.xml 读取的Reader 对象
+   * @param environment 生效的环境
+   * @param properties 属性信息
+   * @return 返回SqlSessionFactory
+   */
   public SqlSessionFactory build(Reader reader, String environment, Properties properties) {
     try {
       XMLConfigBuilder parser = new XMLConfigBuilder(reader, environment, properties);
