@@ -38,6 +38,9 @@ import org.apache.ibatis.reflection.SystemMetaObject;
  * @author Clinton Begin
  */
 public class CacheBuilder {
+  /**
+   * id 为 namespace
+   */
   private final String id;
   private Class<? extends Cache> implementation;
   private final List<Class<? extends Cache>> decorators;
@@ -92,15 +95,21 @@ public class CacheBuilder {
   public Cache build() {
     setDefaultImplementations();
     Cache cache = newBaseCacheInstance(implementation, id);
+    // 设置属性，只有子扩展的 PerpetualCache.class 才可能可能用到
     setCacheProperties(cache);
     // issue #352, do not apply decorators to custom caches
+    // 如果是 cache 是 PerpetualCache ，则尝试添加装饰器
     if (PerpetualCache.class.equals(cache.getClass())) {
       for (Class<? extends Cache> decorator : decorators) {
         cache = newCacheDecoratorInstance(decorator, cache);
+        // 设置被装饰之后的属性信息
         setCacheProperties(cache);
       }
+      // 最后添加标准的信息
       cache = setStandardDecorators(cache);
     } else if (!LoggingCache.class.isAssignableFrom(cache.getClass())) {
+      // 否则如果父类不是 LoggingCache，则会添加一层 LoggingCache 包装器
+      // 并且不再理会添加的装饰器
       cache = new LoggingCache(cache);
     }
     return cache;
@@ -109,6 +118,7 @@ public class CacheBuilder {
   private void setDefaultImplementations() {
     if (implementation == null) {
       implementation = PerpetualCache.class;
+      // 即便没有添加任何的装饰器，也会将 LruCache 设置进来
       if (decorators.isEmpty()) {
         decorators.add(LruCache.class);
       }
@@ -122,13 +132,17 @@ public class CacheBuilder {
         metaCache.setValue("size", size);
       }
       if (clearInterval != null) {
+        // 如果是设置了定时清理，则添加 ScheduledCache 装饰器
         cache = new ScheduledCache(cache);
         ((ScheduledCache) cache).setClearInterval(clearInterval);
       }
       if (readWrite) {
+        // 序列号装饰器
         cache = new SerializedCache(cache);
       }
+      // 添加日志装饰器
       cache = new LoggingCache(cache);
+      // 添加
       cache = new SynchronizedCache(cache);
       if (blocking) {
         cache = new BlockingCache(cache);

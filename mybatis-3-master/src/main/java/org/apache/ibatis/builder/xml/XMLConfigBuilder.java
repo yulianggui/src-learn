@@ -463,6 +463,16 @@ public class XMLConfigBuilder extends BaseBuilder {
     }
   }
 
+  /**
+   *     <mappers>
+   *         <mapper resource="mapper/EmployeeMapper.xml"/>
+   *         <mapper class="com.zhegui.project.mybatis.mapper.EmployeeMapper"/>
+   *         <mapper url="http://cccc"/>
+   *         <package name="com.zhegui.project.mybatis.mapper"/>
+   *     </mappers>
+   * @param parent mappers
+   * @throws Exception 异常
+   */
   private void mapperElement(XNode parent) throws Exception {
     if (parent != null) {
       for (XNode child : parent.getChildren()) {
@@ -480,7 +490,7 @@ public class XMLConfigBuilder extends BaseBuilder {
           if (resource != null && url == null && mapperClass == null) {
             ErrorContext.instance().resource(resource);
             try(InputStream inputStream = Resources.getResourceAsStream(resource)) {
-              // 使用XML 来解析
+              // 使用 XML 来解析
               XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, resource, configuration.getSqlFragments());
               mapperParser.parse();
             }

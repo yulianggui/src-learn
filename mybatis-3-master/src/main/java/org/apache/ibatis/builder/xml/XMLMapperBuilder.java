@@ -57,6 +57,7 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   private final XPathParser parser;
   private final MapperBuilderAssistant builderAssistant;
+  // sql 标签
   private final Map<String, XNode> sqlFragments;
   private final String resource;
 
@@ -91,8 +92,11 @@ public class XMLMapperBuilder extends BaseBuilder {
   }
 
   public void parse() {
+    // 先判断是否已经加载过该映射文件
     if (!configuration.isResourceLoaded(resource)) {
+      // 解析xml 文件的 mapper 标签
       configurationElement(parser.evalNode("/mapper"));
+      // 添加到 LoadedResource 设置为已经加载过了
       configuration.addLoadedResource(resource);
       bindMapperForNamespace();
     }
@@ -106,18 +110,31 @@ public class XMLMapperBuilder extends BaseBuilder {
     return sqlFragments.get(refid);
   }
 
+  /**
+   * xml 文件的 mapper 标签
+   * @param context mapper 标签
+   */
   private void configurationElement(XNode context) {
     try {
+      // 命名空间
       String namespace = context.getStringAttribute("namespace");
       if (namespace == null || namespace.isEmpty()) {
         throw new BuilderException("Mapper's namespace cannot be empty");
       }
+      // 命名空间，builder 帮助类
       builderAssistant.setCurrentNamespace(namespace);
+      // 是否缓存引用 节点
+      // <cache-ref namespace="com.zhegui.project.mybatis.mapper.EmployeeMapper"/>
       cacheRefElement(context.evalNode("cache-ref"));
+      // 是否有缓存cache 节点
       cacheElement(context.evalNode("cache"));
+      // parameterMap 参数Map ，计划删除了
       parameterMapElement(context.evalNodes("/mapper/parameterMap"));
+      // resultMap 节点 -- 比较复杂，暂时跳过
       resultMapElements(context.evalNodes("/mapper/resultMap"));
+      // sql 节点
       sqlElement(context.evalNodes("/mapper/sql"));
+      // 增删改查标签节点
       buildStatementFromContext(context.evalNodes("select|insert|update|delete"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing Mapper XML. The XML location is '" + resource + "'. Cause: " + e, e);
@@ -189,9 +206,13 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   private void cacheRefElement(XNode context) {
     if (context != null) {
+      // <cache-ref namespace="com.zhegui.project.mybatis.mapper.EmployeeMapper"/>
+      // 将当前命名空间的 cache-ref 的namespace 的映射关系保存到 configuration.cacheRef 缓存Map 中
       configuration.addCacheRef(builderAssistant.getCurrentNamespace(), context.getStringAttribute("namespace"));
       CacheRefResolver cacheRefResolver = new CacheRefResolver(builderAssistant, context.getStringAttribute("namespace"));
       try {
+        // 这个方法，如果 namespace 的值为null 抛出 BuilderException 异常
+        //
         cacheRefResolver.resolveCacheRef();
       } catch (IncompleteElementException e) {
         configuration.addIncompleteCacheRef(cacheRefResolver);
@@ -201,15 +222,23 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   private void cacheElement(XNode context) {
     if (context != null) {
+      // type 属性，默认为 PERPETUAL 即 PerpetualCache.class
       String type = context.getStringAttribute("type", "PERPETUAL");
       Class<? extends Cache> typeClass = typeAliasRegistry.resolveAlias(type);
+      // 解析 eviction ，默认为 LRU 即  LruCache.class ，默认的缓存包装器
       String eviction = context.getStringAttribute("eviction", "LRU");
       Class<? extends Cache> evictionClass = typeAliasRegistry.resolveAlias(eviction);
+      // flushInterval 缓存刷新间隔,默认为 null
       Long flushInterval = context.getLongAttribute("flushInterval");
+      // 缓存的大小，默认为 null
       Integer size = context.getIntAttribute("size");
+      // 是否可写
       boolean readWrite = !context.getBooleanAttribute("readOnly", false);
+      // 是否阻塞
       boolean blocking = context.getBooleanAttribute("blocking", false);
+      // 获取属性 <property name=, value=>
       Properties props = context.getChildrenAsProperties();
+      // 通过builderAssistant 创建一个二级缓存
       builderAssistant.useNewCache(typeClass, evictionClass, flushInterval, size, readWrite, blocking, props);
     }
   }
@@ -240,16 +269,26 @@ public class XMLMapperBuilder extends BaseBuilder {
     }
   }
 
+  /**
+   * 解析 resultMap 标签的内容，可能拿到的是 个list，配置了多个
+   * @param list list
+   */
   private void resultMapElements(List<XNode> list) {
     for (XNode resultMapNode : list) {
       try {
         resultMapElement(resultMapNode);
       } catch (IncompleteElementException e) {
         // ignore, it will be retried
+        // 忽悠，将会重试 parsePendingResultMaps 方法中重试
       }
     }
   }
 
+  /**
+   * 解析每一个
+   * @param resultMapNode resultMapNode
+   * @return 返回 ResultMap
+   */
   private ResultMap resultMapElement(XNode resultMapNode) {
     return resultMapElement(resultMapNode, Collections.emptyList(), null);
   }
@@ -347,23 +386,37 @@ public class XMLMapperBuilder extends BaseBuilder {
       String databaseId = context.getStringAttribute("databaseId");
       String id = context.getStringAttribute("id");
       id = builderAssistant.applyCurrentNamespace(id, false);
+      // 大部分为 databaseIdMatchesCurrent(id, nulll, null)
+      // 如果一样才会加入
       if (databaseIdMatchesCurrent(id, databaseId, requiredDatabaseId)) {
         sqlFragments.put(id, context);
       }
     }
   }
 
+  /**
+   * 判断 sql 标签的 databaseId 与当前环境的 configuration.getDatabaseId() 是否一样，如果一样，返回true
+   * @param id id
+   * @param databaseId
+   * @param requiredDatabaseId
+   * @return
+   */
   private boolean databaseIdMatchesCurrent(String id, String databaseId, String requiredDatabaseId) {
+    // requiredDatabaseId !=null
     if (requiredDatabaseId != null) {
       return requiredDatabaseId.equals(databaseId);
     }
+    // 到这里 requiredDatabaseId == null && databaseId !=null
     if (databaseId != null) {
       return false;
     }
+    // 到这里 requiredDatabaseId == null && databaseId == null
+    // 并且 sqlFragments 不包含当前 id
     if (!this.sqlFragments.containsKey(id)) {
       return true;
     }
     // skip this fragment if there is a previous one with a not null databaseId
+    // 取出 sql 节点，判断 databaseId 是否为 null ，如果为 null ，返回true，后面的覆盖前面的
     XNode context = this.sqlFragments.get(id);
     return context.getStringAttribute("databaseId") == null;
   }

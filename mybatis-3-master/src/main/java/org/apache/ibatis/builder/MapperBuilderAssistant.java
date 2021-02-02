@@ -54,9 +54,22 @@ import org.apache.ibatis.type.TypeHandler;
  */
 public class MapperBuilderAssistant extends BaseBuilder {
 
+  /**
+   * 命名空间
+   */
   private String currentNamespace;
+  /**
+   * 资源名称
+   * resource | url 对应的值
+   */
   private final String resource;
+  /**
+   * 当前命名空间的缓存类
+   */
   private Cache currentCache;
+  /**
+   * 是否解析到了 CacheRef
+   */
   private boolean unresolvedCacheRef; // issue #676
 
   public MapperBuilderAssistant(Configuration configuration, String resource) {
@@ -95,10 +108,10 @@ public class MapperBuilderAssistant extends BaseBuilder {
       // is it qualified with this namespace yet?
       if (base.startsWith(currentNamespace + ".")) {
         return base;
-      }
-      if (base.contains(".")) {
+      }   if (base.contains(".")) {
         throw new BuilderException("Dots are not allowed in element names, please remove it from " + base);
       }
+
     }
     return currentNamespace + "." + base;
   }
@@ -111,9 +124,13 @@ public class MapperBuilderAssistant extends BaseBuilder {
       unresolvedCacheRef = true;
       Cache cache = configuration.getCache(namespace);
       if (cache == null) {
+        // IncompleteElementException 抛出这个异常，在解析的地方会捕获，然后 添加到 configuration.incompleteCacheRefs 中
+        // 表示未完成的 CacheRefResolver
         throw new IncompleteElementException("No cache for namespace '" + namespace + "' could be found.");
       }
+      // 找到，当前的缓存cache 为 cache
       currentCache = cache;
+      // 设置为 false ，表示解析到了
       unresolvedCacheRef = false;
       return cache;
     } catch (IllegalArgumentException e) {
@@ -128,8 +145,12 @@ public class MapperBuilderAssistant extends BaseBuilder {
       boolean readWrite,
       boolean blocking,
       Properties props) {
+    // CacheBuilder 缓存构建器
+    // 当前线程的缓存，
     Cache cache = new CacheBuilder(currentNamespace)
+        // 解析不到的默认是
         .implementation(valueOrDefault(typeClass, PerpetualCache.class))
+        // 添加装饰器
         .addDecorator(valueOrDefault(evictionClass, LruCache.class))
         .clearInterval(flushInterval)
         .size(size)
@@ -137,7 +158,9 @@ public class MapperBuilderAssistant extends BaseBuilder {
         .blocking(blocking)
         .properties(props)
         .build();
+    // 将添加好的 cache 放入到 Configuration 中，id 作为 key
     configuration.addCache(cache);
+    // cache 标签的会覆盖掉 cache-ref 的
     currentCache = cache;
     return cache;
   }
