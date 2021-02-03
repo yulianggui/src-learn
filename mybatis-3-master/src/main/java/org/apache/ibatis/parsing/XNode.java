@@ -113,6 +113,7 @@ public class XNode {
     return builder.toString();
   }
 
+  // 比如 XMLMapperBuilder 中就有用到，解析 resultMap 的 id ，如果是默认值的话
   // users[null]user[u1]name[张三]
   public String getValueBasedIdentifier() {
     StringBuilder builder = new StringBuilder();

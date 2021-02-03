@@ -32,22 +32,71 @@ import org.apache.ibatis.reflection.ParamNameUtil;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * ResultMap 是值 resultMap 这个节点的属性
+ * 以及其子节点的一些 信息
+ * 而 ResultMapping 是<id> <column> 这些
  * @author Clinton Begin
  */
 public class ResultMap {
   private Configuration configuration;
 
+  /**
+   * id <resultMap id=>
+   */
   private String id;
+  /**
+   * type <resultMap type=类权限定名称>
+   */
   private Class<?> type;
+  /**
+   * id 子节点的 ResultMappings 对象
+   * <resultMap id="" type="">
+   *    <result column="" property=""></result>
+   * </resultMap>
+   */
   private List<ResultMapping> resultMappings;
+  /**
+   * id 子节点的 ResultMappings 对象
+   * <resultMap id="" type="">
+   *    <id column="" property=""></id>
+   * </resultMap>
+   * 另外还有 <constructor>
+   *          <idArg></idArg>
+   *        </constructor>
+   */
   private List<ResultMapping> idResultMappings;
+  /**
+   * 记录了映射关系中带有 Constructor 标志的映射关心，例如 <constructor> 所有子元素
+   */
   private List<ResultMapping> constructorResultMappings;
+  /**
+   * 记录了所有映射关心中不带 有 Constructor 标志的映射关心
+   */
   private List<ResultMapping> propertyResultMappings;
+  /**
+   * 记录了所有映射关系中涉及 column 属性的集合
+   */
   private Set<String> mappedColumns;
+  /**
+   * 记录了所有映射关系中涉及 property 属性的集合
+   */
   private Set<String> mappedProperties;
+  /**
+   * 鉴别器，对应 discriminator 节点
+   */
   private Discriminator discriminator;
+  /**
+   * 是否有嵌套的结果映射，如果某个映射关系中存在 resultMap 属性，且不存在 resultSet 属性，则为 true
+   * 嵌套 association | collection | case
+   */
   private boolean hasNestedResultMaps;
+  /**
+   * 是否有嵌套查询，如果某个属性映射器在 select 属性，则为 true
+   */
   private boolean hasNestedQueries;
+  /**
+   * 是否开启自动映射
+   */
   private Boolean autoMapping;
 
   private ResultMap() {
@@ -90,6 +139,7 @@ public class ResultMap {
       resultMap.propertyResultMappings = new ArrayList<>();
       final List<String> constructorArgNames = new ArrayList<>();
       for (ResultMapping resultMapping : resultMap.resultMappings) {
+        // hasNestedQueries、hasNestedResultMaps 每次遍历之后，可能之前的已经为 true
         resultMap.hasNestedQueries = resultMap.hasNestedQueries || resultMapping.getNestedQueryId() != null;
         resultMap.hasNestedResultMaps = resultMap.hasNestedResultMaps || (resultMapping.getNestedResultMapId() != null && resultMapping.getResultSet() == null);
         final String column = resultMapping.getColumn();
@@ -119,6 +169,7 @@ public class ResultMap {
           resultMap.idResultMappings.add(resultMapping);
         }
       }
+      // 如果没有指定主键返回
       if (resultMap.idResultMappings.isEmpty()) {
         resultMap.idResultMappings.addAll(resultMap.resultMappings);
       }

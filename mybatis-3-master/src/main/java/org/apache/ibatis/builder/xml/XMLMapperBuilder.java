@@ -130,10 +130,11 @@ public class XMLMapperBuilder extends BaseBuilder {
       cacheElement(context.evalNode("cache"));
       // parameterMap 参数Map ，计划删除了
       parameterMapElement(context.evalNodes("/mapper/parameterMap"));
-      // resultMap 节点 -- 比较复杂，暂时跳过
+      // resultMap 节点
       resultMapElements(context.evalNodes("/mapper/resultMap"));
       // sql 节点
       sqlElement(context.evalNodes("/mapper/sql"));
+      // 放入到当前的 sqlFragments 中，属于 Mapper 级别的
       // 增删改查标签节点
       buildStatementFromContext(context.evalNodes("select|insert|update|delete"));
     } catch (Exception e) {
@@ -299,19 +300,28 @@ public class XMLMapperBuilder extends BaseBuilder {
         resultMapNode.getStringAttribute("ofType",
             resultMapNode.getStringAttribute("resultType",
                 resultMapNode.getStringAttribute("javaType"))));
+    /**
+     * 获取 resultMap 的 type 属性
+     */
     Class<?> typeClass = resolveClass(type);
     if (typeClass == null) {
+      // 如果没有解析到 typeClass，即 type == null，有可能解析到的仍然为 null
       typeClass = inheritEnclosingType(resultMapNode, enclosingType);
     }
     Discriminator discriminator = null;
+    // 该集合用于记录解析的结果
     List<ResultMapping> resultMappings = new ArrayList<>(additionalResultMappings);
     List<XNode> resultChildren = resultMapNode.getChildren();
+    // 变量每一个子节点
     for (XNode resultChild : resultChildren) {
       if ("constructor".equals(resultChild.getName())) {
+        // constructor 节点的解析
         processConstructorElement(resultChild, typeClass, resultMappings);
       } else if ("discriminator".equals(resultChild.getName())) {
+        // discriminator 节点的解析
         discriminator = processDiscriminatorElement(resultChild, typeClass, resultMappings);
       } else {
+        // 处理 id、result、collection、association
         List<ResultFlag> flags = new ArrayList<>();
         if ("id".equals(resultChild.getName())) {
           flags.add(ResultFlag.ID);
@@ -319,14 +329,22 @@ public class XMLMapperBuilder extends BaseBuilder {
         resultMappings.add(buildResultMappingFromContext(resultChild, typeClass, flags));
       }
     }
+    // 获取 id 属性，默认值会拼装所有父节点的 id 或者 value 或者 property
     String id = resultMapNode.getStringAttribute("id",
             resultMapNode.getValueBasedIdentifier());
+    // 该属性指定了该 resultMap 节点的继承关心
     String extend = resultMapNode.getStringAttribute("extends");
+    // 将该属性设置为 true ，则启动自动映射的功能
     Boolean autoMapping = resultMapNode.getBooleanAttribute("autoMapping");
+    // resultMap 解析器
     ResultMapResolver resultMapResolver = new ResultMapResolver(builderAssistant, id, typeClass, extend, discriminator, resultMappings, autoMapping);
     try {
+      // 返回解析结果
+      // 该方法会调用 MapperBuilderAssistant.addResultMap 方法创建ResultMap 对象，并将ResultMap 对象添加到 configuration 对象的
+      // resultMaps 集合中
       return resultMapResolver.resolve();
     } catch (IncompleteElementException e) {
+      // 失败了待会再尝试重新加载一遍有问题的 resultMapResolver
       configuration.addIncompleteResultMap(resultMapResolver);
       throw e;
     }
@@ -334,17 +352,25 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   protected Class<?> inheritEnclosingType(XNode resultMapNode, Class<?> enclosingType) {
     if ("association".equals(resultMapNode.getName()) && resultMapNode.getStringAttribute("resultMap") == null) {
+      // 嵌套的 association 集合，拿到 property
       String property = resultMapNode.getStringAttribute("property");
       if (property != null && enclosingType != null) {
         MetaClass metaResultType = MetaClass.forClass(enclosingType, configuration.getReflectorFactory());
         return metaResultType.getSetterType(property);
       }
+      // case 标签 discriminator
     } else if ("case".equals(resultMapNode.getName()) && resultMapNode.getStringAttribute("resultMap") == null) {
       return enclosingType;
     }
     return null;
   }
 
+  /**
+   * 解析 Constructor 节点
+   * @param resultChild 当前的 Constructor 节点
+   * @param resultType 返回类型
+   * @param resultMappings resultMap 中的 List<ResultMapping>
+   */
   private void processConstructorElement(XNode resultChild, Class<?> resultType, List<ResultMapping> resultMappings) {
     List<XNode> argChildren = resultChild.getChildren();
     for (XNode argChild : argChildren) {
@@ -421,6 +447,13 @@ public class XMLMapperBuilder extends BaseBuilder {
     return context.getStringAttribute("databaseId") == null;
   }
 
+  /**
+   * 构建 ResultMapping
+   * @param context 当前的 节点 Mapper
+   * @param resultType 返回类型
+   * @param flags 结果
+   * @return 返回 ResultMapping
+   */
   private ResultMapping buildResultMappingFromContext(XNode context, Class<?> resultType, List<ResultFlag> flags) {
     String property;
     if (flags.contains(ResultFlag.CONSTRUCTOR)) {
@@ -432,6 +465,7 @@ public class XMLMapperBuilder extends BaseBuilder {
     String javaType = context.getStringAttribute("javaType");
     String jdbcType = context.getStringAttribute("jdbcType");
     String nestedSelect = context.getStringAttribute("select");
+    // 解析resultMap，如果未指定 association | collection | case 的 resultMap 属性
     String nestedResultMap = context.getStringAttribute("resultMap", () ->
         processNestedResultMappings(context, Collections.emptyList(), resultType));
     String notNullColumn = context.getStringAttribute("notNullColumn");
@@ -446,9 +480,17 @@ public class XMLMapperBuilder extends BaseBuilder {
     return builderAssistant.buildResultMapping(resultType, property, column, javaTypeClass, jdbcTypeEnum, nestedSelect, nestedResultMap, notNullColumn, columnPrefix, typeHandlerClass, flags, resultSet, foreignColumn, lazy);
   }
 
+  /**
+   * 嵌套的 resultMap
+   * @param context 当前的 resultMap
+   * @param resultMappings 上下文的 resultMapping  ，嵌套只会解析 association | collection | case
+   * @param enclosingType 上下文的
+   * @return 返回 id
+   */
   private String processNestedResultMappings(XNode context, List<ResultMapping> resultMappings, Class<?> enclosingType) {
     if (Arrays.asList("association", "collection", "case").contains(context.getName())
         && context.getStringAttribute("select") == null) {
+      // 校验
       validateCollection(context, enclosingType);
       ResultMap resultMap = resultMapElement(context, resultMappings, enclosingType);
       return resultMap.getId();
