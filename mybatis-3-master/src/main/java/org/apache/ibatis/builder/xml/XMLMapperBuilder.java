@@ -142,6 +142,10 @@ public class XMLMapperBuilder extends BaseBuilder {
     }
   }
 
+  /**
+   * 增删改查 解析为 Statement
+   * @param list
+   */
   private void buildStatementFromContext(List<XNode> list) {
     if (configuration.getDatabaseId() != null) {
       buildStatementFromContext(list, configuration.getDatabaseId());
@@ -149,12 +153,19 @@ public class XMLMapperBuilder extends BaseBuilder {
     buildStatementFromContext(list, null);
   }
 
+  /**
+   * 解析为 Statement
+   * @param list
+   * @param requiredDatabaseId
+   */
   private void buildStatementFromContext(List<XNode> list, String requiredDatabaseId) {
     for (XNode context : list) {
+      // XMLStatementBuilder 解析
       final XMLStatementBuilder statementParser = new XMLStatementBuilder(configuration, builderAssistant, context, requiredDatabaseId);
       try {
         statementParser.parseStatementNode();
       } catch (IncompleteElementException e) {
+        // 解析失败了，待会再尝试解析
         configuration.addIncompleteStatement(statementParser);
       }
     }
@@ -483,7 +494,7 @@ public class XMLMapperBuilder extends BaseBuilder {
   /**
    * 嵌套的 resultMap
    * @param context 当前的 resultMap
-   * @param resultMappings 上下文的 resultMapping  ，嵌套只会解析 association | collection | case
+   * @param resultMappings 上下文的 resultMapping  ，嵌套只会解析 association | collection | case，并且 select 为 null
    * @param enclosingType 上下文的
    * @return 返回 id
    */

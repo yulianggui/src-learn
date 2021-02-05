@@ -265,6 +265,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
     return new Discriminator.Builder(configuration, resultMapping, namespaceDiscriminatorMap).build();
   }
 
+  /// select | update | insert | delete node 解析之后成为 MappedStatement
   public MappedStatement addMappedStatement(
       String id,
       SqlSource sqlSource,
@@ -287,6 +288,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
       LanguageDriver lang,
       String resultSets) {
 
+    // 当前的 unresolvedCacheRef 是否已经解析成功
     if (unresolvedCacheRef) {
       throw new IncompleteElementException("Cache-ref not yet resolved");
     }

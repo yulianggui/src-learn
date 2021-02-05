@@ -43,14 +43,25 @@ public class XMLIncludeTransformer {
     this.builderAssistant = builderAssistant;
   }
 
+  /**
+   *  这个解析要在 sql 标签之后  解析 include 标签
+   *  将 include 节点替换成 sql 节点中定义的sql 片段，边将其中的 ${xxx} 占位符替换为真实的参数，该解析过程在
+   * @param source
+   */
   public void applyIncludes(Node source) {
     Properties variablesContext = new Properties();
     Properties configurationVariables = configuration.getVariables();
+    /* 如果 configurationVariables != null ,则 variablesContext.pulAll(variablesContext); */
     Optional.ofNullable(configurationVariables).ifPresent(variablesContext::putAll);
+    // 真正的处理 include 节点
     applyIncludes(source, variablesContext, false);
   }
 
   /**
+   * 这个Node 可能是 select | update | insert | delete 节点
+   * 可能是 include 节点
+   *
+   * 该解析过程可能会涉及多层递归 Mybatis 技术内幕  198 页
    * Recursively apply includes through all SQL fragments.
    *
    * @param source
@@ -72,6 +83,7 @@ public class XMLIncludeTransformer {
       }
       toInclude.getParentNode().removeChild(toInclude);
     } else if (source.getNodeType() == Node.ELEMENT_NODE) {
+      // 变量当前SQL 语句的子节点
       if (included && !variablesContext.isEmpty()) {
         // replace variables in attribute values
         NamedNodeMap attributes = source.getAttributes();
