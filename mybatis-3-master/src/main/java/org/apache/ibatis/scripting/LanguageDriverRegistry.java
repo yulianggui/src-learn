@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 简单经典的类
  * @author Frank D. Martinez [mnesarco]
  */
 public class LanguageDriverRegistry {
