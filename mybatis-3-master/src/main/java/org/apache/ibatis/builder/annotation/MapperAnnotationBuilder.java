@@ -96,6 +96,11 @@ import org.apache.ibatis.type.UnknownTypeHandler;
  */
 public class MapperAnnotationBuilder {
 
+  /**
+   * https://zhuanlan.zhihu.com/p/164902841
+   *  SelectProvider.class, UpdateProvider.class InsertProvider.class, DeleteProvider.class
+   *  本质上是 SelectProvider 等可以引用 SQL 这个类创建的 sql 语句
+   */
   private static final Set<Class<? extends Annotation>> statementAnnotationTypes = Stream
       .of(Select.class, Update.class, Insert.class, Delete.class, SelectProvider.class, UpdateProvider.class,
           InsertProvider.class, DeleteProvider.class)
@@ -106,7 +111,9 @@ public class MapperAnnotationBuilder {
   private final Class<?> type;
 
   public MapperAnnotationBuilder(Configuration configuration, Class<?> type) {
+    // 加载的资源，注意不是 Mapper<Class> 类型
     String resource = type.getName().replace('.', '/') + ".java (best guess)";
+    // 这个 assistant 又出现了
     this.assistant = new MapperBuilderAssistant(configuration, resource);
     this.configuration = configuration;
     this.type = type;
@@ -115,17 +122,38 @@ public class MapperAnnotationBuilder {
   public void parse() {
     String resource = type.toString();
     if (!configuration.isResourceLoaded(resource)) {
+      // 加载对应的 xxxMapper.xml，如果发现已经加载过了，则跳过
       loadXmlResource();
+      // 锁定，类路径 class
       configuration.addLoadedResource(resource);
+      // 当前命名空间 type.getName
       assistant.setCurrentNamespace(type.getName());
+
+      /**
+       * 这里跟 xml 解析的不大一样
+       * CacheNamespace 在前
+       * parseCacheRef 在后
+       * xml 相反
+       * 这是为何？？？
+       */
+
+      // 解析 cache 注解。 CacheNamespace 该注解作用于 接口层面
       parseCache();
+      // 解析 cacheRef 注解， CacheNamespaceRef 注解
+      // 这里解析失败的 cacheRef ，怎么保证 其 实在解析所有注解之后，在 xml 中再尝试一遍的？
       parseCacheRef();
+      // 解析每个方法，是否都存在  select | selectProvider 等
       for (Method method : type.getMethods()) {
         if (!canHaveStatement(method)) {
           continue;
         }
+        // select 方法，ResultMap 注解为 null
+        // 1、select | selectProvider 注解存在
+        // 2、ResultMap 注解不存在
+        // 这里主要解析 Arg 、Result 等
         if (getAnnotationWrapper(method, false, Select.class, SelectProvider.class).isPresent()
             && method.getAnnotation(ResultMap.class) == null) {
+          // 解析 ResultMap
           parseResultMap(method);
         }
         try {
@@ -135,11 +163,13 @@ public class MapperAnnotationBuilder {
         }
       }
     }
+    // 失败的 Methods ,再次进行尝试
     parsePendingMethods();
   }
 
   private boolean canHaveStatement(Method method) {
     // issue #237
+    // 没有默认 default 修饰
     return !method.isBridge() && !method.isDefault();
   }
 
@@ -158,11 +188,20 @@ public class MapperAnnotationBuilder {
     }
   }
 
+  /**
+   * 加载与之对应的 xxxMapper.xml 资源
+   *    如果该 Mapper 没有加载，则加载，否则跳过
+   *    这里比较简单。 找到 namespace:类名称
+   */
   private void loadXmlResource() {
     // Spring may not know the real resource name so we check a flag
     // to prevent loading again a resource twice
     // this flag is set at XMLMapperBuilder#bindMapperForNamespace
     if (!configuration.isResourceLoaded("namespace:" + type.getName())) {
+      // xmlResource 的名称默认为 类全路径限定名称+.xml
+      // com.zhegui.project.mybatis.mapper.Test
+      // com/zhegui/project/mybatis/mapper/Test.xml
+      // 所以，如果没有在 mybatis-config.xml 中手动配置，会从这个地方找
       String xmlResource = type.getName().replace('.', '/') + ".xml";
       // #1347
       InputStream inputStream = type.getResourceAsStream("/" + xmlResource);
@@ -174,6 +213,7 @@ public class MapperAnnotationBuilder {
           // ignore, resource is not required
         }
       }
+      // 如果读取到了
       if (inputStream != null) {
         XMLMapperBuilder xmlParser = new XMLMapperBuilder(inputStream, assistant.getConfiguration(), xmlResource, configuration.getSqlFragments(), type.getName());
         xmlParser.parse();
@@ -224,10 +264,15 @@ public class MapperAnnotationBuilder {
   }
 
   private String parseResultMap(Method method) {
+    // 获取方法的返回类型
     Class<?> returnType = getReturnType(method);
+    // 获取 arg 注解
     Arg[] args = method.getAnnotationsByType(Arg.class);
+    // 获取 result 注解 ，映射关系
     Result[] results = method.getAnnotationsByType(Result.class);
+    // 获取 TypeDiscriminator 注解
     TypeDiscriminator typeDiscriminator = method.getAnnotation(TypeDiscriminator.class);
+    // 生成 resultMapId
     String resultMapId = generateResultMapName(method);
     applyResultMap(resultMapId, returnType, args, results, typeDiscriminator);
     return resultMapId;
@@ -297,9 +342,13 @@ public class MapperAnnotationBuilder {
     final Class<?> parameterTypeClass = getParameterType(method);
     final LanguageDriver languageDriver = getLanguageDriver(method);
 
+    // 从 statementAnnotationTypes 中获取注解，注意这里 errorIfNoMatch 为 true
+    // 如果存在，则逐个解析为 statement ，并添加到 configuration 中
     getAnnotationWrapper(method, true, statementAnnotationTypes).ifPresent(statementAnnotation -> {
+      // 根据 注解类型构建 sqlSource ，因此不管是 xml 还是注解类型，最终都会被解析成为 sqlSource 中
       final SqlSource sqlSource = buildSqlSource(statementAnnotation.getAnnotation(), parameterTypeClass, languageDriver, method);
       final SqlCommandType sqlCommandType = statementAnnotation.getSqlCommandType();
+      // 是否有 Options 注解
       final Options options = getAnnotationWrapper(method, false, Options.class).map(x -> (Options)x.getAnnotation()).orElse(null);
       final String mappedStatementId = type.getName() + "." + method.getName();
 
@@ -345,6 +394,7 @@ public class MapperAnnotationBuilder {
         }
       }
 
+      // 只有 select 时 resultMapId 才会有
       String resultMapId = null;
       if (isSelect) {
         ResultMap resultMapAnnotation = method.getAnnotation(ResultMap.class);
@@ -410,21 +460,27 @@ public class MapperAnnotationBuilder {
   private Class<?> getReturnType(Method method) {
     Class<?> returnType = method.getReturnType();
     Type resolvedReturnType = TypeParameterResolver.resolveReturnType(method, type);
+    // class 类型
     if (resolvedReturnType instanceof Class) {
       returnType = (Class<?>) resolvedReturnType;
       if (returnType.isArray()) {
+        // 数组类型，返回数组的原生类型
         returnType = returnType.getComponentType();
       }
       // gcode issue #508
+      // 返回 空
       if (void.class.equals(returnType)) {
+        // 获取方法的 ResultType 注解
         ResultType rt = method.getAnnotation(ResultType.class);
         if (rt != null) {
           returnType = rt.value();
         }
       }
     } else if (resolvedReturnType instanceof ParameterizedType) {
+      // 泛型
       ParameterizedType parameterizedType = (ParameterizedType) resolvedReturnType;
       Class<?> rawType = (Class<?>) parameterizedType.getRawType();
+      // 集合Collection 或者 cursor 游标
       if (Collection.class.isAssignableFrom(rawType) || Cursor.class.isAssignableFrom(rawType)) {
         Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
         if (actualTypeArguments != null && actualTypeArguments.length == 1) {
@@ -441,6 +497,7 @@ public class MapperAnnotationBuilder {
           }
         }
       } else if (method.isAnnotationPresent(MapKey.class) && Map.class.isAssignableFrom(rawType)) {
+        // Map 类型映射，存在 MapKey 字段信息
         // (gcode issue 504) Do not look into Maps if there is not MapKey annotation
         Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
         if (actualTypeArguments != null && actualTypeArguments.length == 2) {
@@ -627,6 +684,7 @@ public class MapperAnnotationBuilder {
     } else if (annotation instanceof SelectKey) {
       return buildSqlSourceFromStrings(((SelectKey) annotation).statement(), parameterType, languageDriver);
     }
+    // 否则为 selectProvider 的类型 -- ProviderSqlSource implements SqlSource
     return new ProviderSqlSource(assistant.getConfiguration(), annotation, type, method);
   }
 
@@ -644,6 +702,9 @@ public class MapperAnnotationBuilder {
   private Optional<AnnotationWrapper> getAnnotationWrapper(Method method, boolean errorIfNoMatch,
       Collection<Class<? extends Annotation>> targetTypes) {
     String databaseId = configuration.getDatabaseId();
+    // 获取 Method 中的  targetTypes 注解，并且与 dataBaseId 作为 key，将注解 包装为 AnnotationWrapper
+    // dataBaseId 不能重复。即不能有 同时使用 select selectProvider 的情况。 且 dataBaseId 又一致的情况
+    // 同时 select | select
     Map<String, AnnotationWrapper> statementAnnotations = targetTypes.stream()
         .flatMap(x -> Arrays.stream(method.getAnnotationsByType(x))).map(AnnotationWrapper::new)
         .collect(Collectors.toMap(AnnotationWrapper::getDatabaseId, x -> x, (existing, duplicate) -> {
@@ -651,6 +712,7 @@ public class MapperAnnotationBuilder {
               existing.getAnnotation(), duplicate.getAnnotation(),
               method.getDeclaringClass().getName() + "." + method.getName()));
         }));
+    // 要返回的 annotationWrapper
     AnnotationWrapper annotationWrapper = null;
     if (databaseId != null) {
       annotationWrapper = statementAnnotations.get(databaseId);
@@ -658,6 +720,9 @@ public class MapperAnnotationBuilder {
     if (annotationWrapper == null) {
       annotationWrapper = statementAnnotations.get("");
     }
+    // 如果 errorIfNoMatch 为 true，即没有匹配时抛出异常
+    // annotationWrapper 找不到
+    // 并且 statementAnnotations 又能解析得到 ，说明此时全局的 dataBaseId 和注解的 id 对不上，写错了
     if (errorIfNoMatch && annotationWrapper == null && !statementAnnotations.isEmpty()) {
       // Annotations exist, but there is no matching one for the specified databaseId
       throw new BuilderException(
