@@ -91,18 +91,32 @@ public class XMLMapperBuilder extends BaseBuilder {
     this.resource = resource;
   }
 
+  /**
+   *    <mappers>
+   *             <mapper resource="mapper/EmployeeMapper.xml"/>
+   *             <mapper class="com.zhegui.project.mybatis.mapper.EmployeeMapper"/>
+   *             <mapper url="http://cccc"/>
+   *            <package name="com.zhegui.project.mybatis.mapper"/>
+   *    </mappers>
+   */
   public void parse() {
     // 先判断是否已经加载过该映射文件
     if (!configuration.isResourceLoaded(resource)) {
       // 解析xml 文件的 mapper 标签
+      // resource 为 resource | url
       configurationElement(parser.evalNode("/mapper"));
       // 添加到 LoadedResource 设置为已经加载过了
       configuration.addLoadedResource(resource);
+      // 绑定命名空间，将 configuration.addMapper
       bindMapperForNamespace();
     }
 
+    // 此三处解析不到不会报错哦
+    // 处理之前解析失败的 ResultNaps
     parsePendingResultMaps();
+    // 处理之前解析失败的 cacheRefs 标签
     parsePendingCacheRefs();
+    // 处理之前解析失败的 增删改查
     parsePendingStatements();
   }
 
@@ -522,10 +536,12 @@ public class XMLMapperBuilder extends BaseBuilder {
   }
 
   private void bindMapperForNamespace() {
+    // 得到 currentNamespace 命名空间
     String namespace = builderAssistant.getCurrentNamespace();
     if (namespace != null) {
       Class<?> boundType = null;
       try {
+        // 尝试得到命名空间对应的 接口
         boundType = Resources.classForName(namespace);
       } catch (ClassNotFoundException e) {
         // ignore, bound type is not required

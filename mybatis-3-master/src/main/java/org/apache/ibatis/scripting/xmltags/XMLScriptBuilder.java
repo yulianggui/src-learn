@@ -30,6 +30,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
+ * Mybatis 动态 sql 解析器
  * @author Clinton Begin
  */
 public class XMLScriptBuilder extends BaseBuilder {

@@ -94,20 +94,35 @@ public class XMLStatementBuilder extends BaseBuilder {
     LanguageDriver langDriver = getLanguageDriver(lang);
 
     // Parse selectKey after includes and remove them.
-    // 解析 selectKey 标签
+    // 解析 selectKey 标签，注意哦，解析 selectKey 的时候，已经删除了 该Node
     processSelectKeyNodes(id, parameterTypeClass, langDriver);
 
     // Parse the SQL (pre: <selectKey> and <include> were parsed and removed)
     KeyGenerator keyGenerator;
     String keyStatementId = id + SelectKeyGenerator.SELECT_KEY_SUFFIX;
     keyStatementId = builderAssistant.applyCurrentNamespace(keyStatementId, true);
+    // 可能没有指定 selectKey 这标签
     if (configuration.hasKeyGenerator(keyStatementId)) {
       keyGenerator = configuration.getKeyGenerator(keyStatementId);
     } else {
+
+      // 1、指定了 selectKey 标签中的，优先使用
+      // 2、指定了 insert 标签中的 useGeneratedKeys=true | (全局配置了 isUseGeneratedKeys，并且为select 语句)，则为 Jdbc3KeyGenerator.INSTANCE
+      // 3、否则为 NoKeyGenerator.INSTANCE，即不没有使用
+
       keyGenerator = context.getBooleanAttribute("useGeneratedKeys",
           configuration.isUseGeneratedKeys() && SqlCommandType.INSERT.equals(sqlCommandType))
           ? Jdbc3KeyGenerator.INSTANCE : NoKeyGenerator.INSTANCE;
     }
+
+    /**
+     * 到了这里，咱们的 select | update | insert | delete
+     * 已经解析了 include 中的 sql 、selectKey 中的信息
+     * 并且已经将他们删除相应的 node，只保留 include selectKey 解析完后的xml 节点的属性信息(NODE-text类型)
+     *
+     * 只剩下 <if> <where> <trim> #{} ${}
+     * 和自己本身写的 sql 了
+     */
 
     // node 节点中的 sql 被解析成为 SqlSource ，这个sqlSource 可能是带动态参数或者占位符的
     SqlSource sqlSource = langDriver.createSqlSource(configuration, context, parameterTypeClass);
@@ -189,6 +204,8 @@ public class XMLStatementBuilder extends BaseBuilder {
     id = builderAssistant.applyCurrentNamespace(id, false);
 
     MappedStatement keyStatement = configuration.getMappedStatement(id, false);
+    // 保存的Map 是一个定制化的  StrictMap
+    // SelectKeyGenerator 中有 MappedStatement 、executeBefore 执行之前还是只有的sql
     configuration.addKeyGenerator(id, new SelectKeyGenerator(keyStatement, executeBefore));
   }
 

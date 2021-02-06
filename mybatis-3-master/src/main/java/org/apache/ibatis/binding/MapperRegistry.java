@@ -66,6 +66,7 @@ public class MapperRegistry {
       }
       boolean loadCompleted = false;
       try {
+        // 注册Mapper 的时候就会生成相应的代理对象缓存起来了
         knownMappers.put(type, new MapperProxyFactory<>(type));
         // It's important that the type is added before the parser is run
         // otherwise the binding may automatically be attempted by the

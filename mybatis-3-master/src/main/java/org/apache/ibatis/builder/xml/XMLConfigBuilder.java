@@ -470,6 +470,13 @@ public class XMLConfigBuilder extends BaseBuilder {
    *         <mapper url="http://cccc"/>
    *         <package name="com.zhegui.project.mybatis.mapper"/>
    *     </mappers>
+   *     mapperRegistry.addMappers
+   *     注意了，这addMapper 之后，会为这些接口生产代理对象缓存，并且会再次解析 mapepr 接口，使用 MapperAnnotationBuilder
+   *     解析注解方式的 sql | ... 等
+   *
+   *     所以得出结论
+   *     先解析 xml 的，再解析注解的
+   *
    * @param parent mappers
    * @throws Exception 异常
    */
@@ -481,6 +488,8 @@ public class XMLConfigBuilder extends BaseBuilder {
           String mapperPackage = child.getStringAttribute("name");
           // 直接调用 configuration.addMappers
           // mapperRegistry.addMappers
+          // 注意了，这addMapper 之后，会为这些接口生产代理对象缓存，并且会再次解析 mapepr 接口，使用 MapperAnnotationBuilder
+          // 解析注解方式的 sql | ... 等
           configuration.addMappers(mapperPackage);
         } else {
           String resource = child.getStringAttribute("resource");

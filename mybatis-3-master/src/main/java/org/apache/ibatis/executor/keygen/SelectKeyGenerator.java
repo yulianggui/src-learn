@@ -27,6 +27,7 @@ import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.RowBounds;
 
 /**
+ * 查看自增主键生成通用器。保存了一些信息而已
  * @author Clinton Begin
  * @author Jeff Butler
  */
