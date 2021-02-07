@@ -42,6 +42,7 @@ public class SqlSourceBuilder extends BaseBuilder {
 
   public SqlSource parse(String originalSql, Class<?> parameterType, Map<String, Object> additionalParameters) {
     ParameterMappingTokenHandler handler = new ParameterMappingTokenHandler(configuration, parameterType, additionalParameters);
+    // 解析 #{} 类型
     GenericTokenParser parser = new GenericTokenParser("#{", "}", handler);
     String sql;
     if (configuration.isShrinkWhitespacesInSql()) {
@@ -88,6 +89,11 @@ public class SqlSourceBuilder extends BaseBuilder {
       return "?";
     }
 
+    /**
+     * 将从 当前的 content 中解析出 #{} 填写的信息
+     * @param content 携带 #{} 的内容
+     * @return 返回一个 ParameterMapping 的对象
+     */
     private ParameterMapping buildParameterMapping(String content) {
       Map<String, String> propertiesMap = parseParameterMapping(content);
       String property = propertiesMap.get("property");

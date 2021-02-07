@@ -27,6 +27,7 @@ import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 动态 SQL 内容
  * @author Clinton Begin
  */
 public class DynamicContext {
@@ -35,16 +36,25 @@ public class DynamicContext {
   public static final String DATABASE_ID_KEY = "_databaseId";
 
   static {
+    // 注册 Ognl 属性解析器
     OgnlRuntime.setPropertyAccessor(ContextMap.class, new ContextAccessor());
   }
 
+  /**
+   * 参数上下文，用来存放传递过来的参数信息
+   */
   private final ContextMap bindings;
+  /**
+   * 在 SqlNode 解析动态 SQL 时，会将解析后的 SQL 语句片段添加到该属性中保存，最终拼凑出一条完整的 SQL 语句
+   */
   private final StringJoiner sqlBuilder = new StringJoiner(" ");
   private int uniqueNumber = 0;
 
   public DynamicContext(Configuration configuration, Object parameterObject) {
     if (parameterObject != null && !(parameterObject instanceof Map)) {
       MetaObject metaObject = configuration.newMetaObject(parameterObject);
+      // 存在 parameterObject 对应的类型转换器
+      // 枚举、Int 、String 等，返回这些原始类型，也包括自定义的
       boolean existsTypeHandler = configuration.getTypeHandlerRegistry().hasTypeHandler(parameterObject.getClass());
       bindings = new ContextMap(metaObject, existsTypeHandler);
     } else {
@@ -74,9 +84,18 @@ public class DynamicContext {
     return uniqueNumber++;
   }
 
+  /**
+   * 可以理解为 定制的 HashMap
+   */
   static class ContextMap extends HashMap<String, Object> {
     private static final long serialVersionUID = 2977601501966151582L;
+    /**
+     * 将用户传入的参数封装成为 MetaObject 对象
+     */
     private final MetaObject parameterMetaObject;
+    /**
+     * 是否回滚参数对象，用来获取源对象 parameterMetaObject 对应的源对象 getOriginalObject
+     */
     private final boolean fallbackParameterObject;
 
     public ContextMap(MetaObject parameterMetaObject, boolean fallbackParameterObject) {

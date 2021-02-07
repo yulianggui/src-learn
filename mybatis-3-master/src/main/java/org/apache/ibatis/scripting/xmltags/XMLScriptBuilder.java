@@ -31,6 +31,10 @@ import org.w3c.dom.NodeList;
 
 /**
  * Mybatis 动态 sql 解析器
+ *
+ * 在 Mybatis 中，定义的 SQL 本解析为 MapperStatement 对象
+ * 而其中的 SQL 语句会被解析成为 SqlSource 对象
+ * SQL 中定义的 SQL 解析、文本节点等，则由 SqlNode 接口相应的实现类组成
  * @author Clinton Begin
  */
 public class XMLScriptBuilder extends BaseBuilder {
@@ -48,6 +52,7 @@ public class XMLScriptBuilder extends BaseBuilder {
     super(configuration);
     this.context = context;
     this.parameterType = parameterType;
+    // 将 trim 、where 这些标签对应的处理器全部初始化到 nodeHandlerMap 中
     initNodeHandlerMap();
   }
 
@@ -64,8 +69,15 @@ public class XMLScriptBuilder extends BaseBuilder {
     nodeHandlerMap.put("bind", new BindHandler());
   }
 
+  /**
+   * 解析当前 XNode (script)
+   * @return 返回 SqlSource 对象，表达的是 解析到的语句信息
+   */
   public SqlSource parseScriptNode() {
+    // 首先判断当前的节点是不是存在动态 SQL ，动态SQL 会包括占位符 或者是 动态 SQL 相关的节点
     MixedSqlNode rootSqlNode = parseDynamicTags(context);
+    // 如果是动态 SQL, 则 SqlSource = DynamicSqlSource
+    // 否则 RawSqlSource
     SqlSource sqlSource;
     if (isDynamic) {
       sqlSource = new DynamicSqlSource(configuration, rootSqlNode);
@@ -76,25 +88,34 @@ public class XMLScriptBuilder extends BaseBuilder {
   }
 
   protected MixedSqlNode parseDynamicTags(XNode node) {
+    // 记录生成的 SqlNode 集合
     List<SqlNode> contents = new ArrayList<>();
+    // 获取所有的子节点
     NodeList children = node.getNode().getChildNodes();
     for (int i = 0; i < children.getLength(); i++) {
+      // 获取 子节点
       XNode child = node.newXNode(children.item(i));
       if (child.getNode().getNodeType() == Node.CDATA_SECTION_NODE || child.getNode().getNodeType() == Node.TEXT_NODE) {
+        // 文本 | CDATASection 选项， 即 ${} 这些占位符
         String data = child.getStringBody("");
+        // 根据内容创建 TextSqlNode
         TextSqlNode textSqlNode = new TextSqlNode(data);
         if (textSqlNode.isDynamic()) {
+          // 动态文本 TextSqlNode
           contents.add(textSqlNode);
           isDynamic = true;
         } else {
+          // 静态文本
           contents.add(new StaticTextSqlNode(data));
         }
       } else if (child.getNode().getNodeType() == Node.ELEMENT_NODE) { // issue #628
+        // 元素 -- 子标签 where 等
         String nodeName = child.getNode().getNodeName();
         NodeHandler handler = nodeHandlerMap.get(nodeName);
         if (handler == null) {
           throw new BuilderException("Unknown element <" + nodeName + "> in SQL statement.");
         }
+        // 同样解析完毕会 add 到 contents 中
         handler.handleNode(child, contents);
         isDynamic = true;
       }

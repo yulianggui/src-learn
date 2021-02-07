@@ -18,6 +18,9 @@ package org.apache.ibatis.scripting.xmltags;
 import java.util.List;
 
 /**
+ * 多个 SqlNode 的集合
+ *   这些 SqlNode 就是咋们 select | update 中解析到的信息
+ *   包括 动态、静态的 SqlNode 等
  * @author Clinton Begin
  */
 public class MixedSqlNode implements SqlNode {

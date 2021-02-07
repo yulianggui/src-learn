@@ -23,9 +23,14 @@ import org.apache.ibatis.parsing.XNode;
 import org.apache.ibatis.scripting.defaults.DefaultParameterHandler;
 import org.apache.ibatis.session.Configuration;
 
+/**
+ * 语言驱动接口
+ */
 public interface LanguageDriver {
 
   /**
+   * 创建 ParameterHandler 对象
+   *    设置动态参数， 获取参数信息
    * Creates a {@link ParameterHandler} that passes the actual parameters to the the JDBC statement.
    *
    * @author Frank D. Martinez [mnesarco]

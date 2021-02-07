@@ -39,9 +39,16 @@ public class DynamicSqlSource implements SqlSource {
     rootSqlNode.apply(context);
     SqlSourceBuilder sqlSourceParser = new SqlSourceBuilder(configuration);
     Class<?> parameterType = parameterObject == null ? Object.class : parameterObject.getClass();
+    // 返回 StaticSqlSource
     SqlSource sqlSource = sqlSourceParser.parse(context.getSql(), parameterType, context.getBindings());
     BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
+    // context.getBindings() 中，可以理解为将 parameterObject 传过来的参数 解析到了 getBindings 中
     context.getBindings().forEach(boundSql::setAdditionalParameter);
+
+    // 等同如下
+    /*  context.getBindings().forEach((key, value) ->{
+        boundSql.setAdditionalParameter(key, value);
+    });*/
     return boundSql;
   }
 
