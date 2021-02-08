@@ -32,6 +32,12 @@ import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.transaction.Transaction;
 
 /**
+ * simpleExecutor 中不再需要关心一级缓存
+ *  只关心
+ *    doUpdate
+ *    doQuery
+ *    doQueryCursor
+ *    doFlushStatements
  * @author Clinton Begin
  */
 public class SimpleExecutor extends BaseExecutor {
@@ -45,7 +51,9 @@ public class SimpleExecutor extends BaseExecutor {
     Statement stmt = null;
     try {
       Configuration configuration = ms.getConfiguration();
+      //创建 StatementHandler 用来执行 sql 与数据库打交道
       StatementHandler handler = configuration.newStatementHandler(this, ms, parameter, RowBounds.DEFAULT, null, null);
+      // 解析得到 Statement 对象 PreparedStatement 等，将 Log 往下传
       stmt = prepareStatement(handler, ms.getStatementLog());
       return handler.update(stmt);
     } finally {
@@ -58,10 +66,14 @@ public class SimpleExecutor extends BaseExecutor {
     Statement stmt = null;
     try {
       Configuration configuration = ms.getConfiguration();
+      // 创建 StatementHandler 对象
       StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler, boundSql);
+      // 初始化 StatementHandler 对象
       stmt = prepareStatement(handler, ms.getStatementLog());
+      // 执行 StatementHandler 的 query 进行查询查找
       return handler.query(stmt, resultHandler);
     } finally {
+      // 关闭 stmt 对象
       closeStatement(stmt);
     }
   }
@@ -72,19 +84,31 @@ public class SimpleExecutor extends BaseExecutor {
     StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, null, boundSql);
     Statement stmt = prepareStatement(handler, ms.getStatementLog());
     Cursor<E> cursor = handler.queryCursor(stmt);
+    // 执行完成，则进行自动关闭
     stmt.closeOnCompletion();
     return cursor;
   }
 
   @Override
   public List<BatchResult> doFlushStatements(boolean isRollback) {
+    // 不做批量处理的操作
     return Collections.emptyList();
   }
 
+  /**
+   * 解析 成为 Statement
+   * @param handler
+   * @param statementLog
+   * @return
+   * @throws SQLException
+   */
   private Statement prepareStatement(StatementHandler handler, Log statementLog) throws SQLException {
     Statement stmt;
+    // 调用 baseExecutor.getConnection
     Connection connection = getConnection(statementLog);
+    // 进行参数解析，创建 Statement 对象 PreparedStatement
     stmt = handler.prepare(connection, transaction.getTimeout());
+    // 设置 SQL 的参数，预编译参数
     handler.parameterize(stmt);
     return stmt;
   }

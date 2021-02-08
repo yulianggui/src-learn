@@ -26,13 +26,30 @@ import org.apache.ibatis.session.Configuration;
 public class ForEachSqlNode implements SqlNode {
   public static final String ITEM_PREFIX = "__frch_";
 
+  /**
+   * 用于判断循环的终止条件
+   */
   private final ExpressionEvaluator evaluator;
+  /**
+   * 迭代的集合表达式
+   * collection 的 OGNL
+   */
   private final String collectionExpression;
+  /**
+   * 记录了 该 ForeachSqlNode 节点的子节点
+   */
   private final SqlNode contents;
   private final String open;
   private final String close;
   private final String separator;
+
+  /**
+   * 当前迭代的元素，如果集合时 Map，则 item 为 值
+   */
   private final String item;
+  /**
+   * 当前迭代的次数，如果集合时 Map，则 index 为 键
+   */
   private final String index;
   private final Configuration configuration;
 
@@ -52,10 +69,13 @@ public class ForEachSqlNode implements SqlNode {
   public boolean apply(DynamicContext context) {
     Map<String, Object> bindings = context.getBindings();
     final Iterable<?> iterable = evaluator.evaluateIterable(collectionExpression, bindings);
+    // 如果不存在任何信息，直接返回 true ，即解析不到 iterable
     if (!iterable.iterator().hasNext()) {
       return true;
     }
+    // first 标识
     boolean first = true;
+    // 应用 open 标签
     applyOpen(context);
     int i = 0;
     for (Object o : iterable) {
@@ -65,6 +85,7 @@ public class ForEachSqlNode implements SqlNode {
       } else {
         context = new PrefixedContext(context, separator);
       }
+      // getUniqueNumber 每次调用该方法都会 ++uniqueNumber
       int uniqueNumber = context.getUniqueNumber();
       // Issue #709
       if (o instanceof Map.Entry) {
@@ -119,6 +140,9 @@ public class ForEachSqlNode implements SqlNode {
     return ITEM_PREFIX + item + "_" + i;
   }
 
+  /**
+   * 负责处理 #{} 占位符，但他并未完成解析 #{} 占位符
+   */
   private static class FilteredDynamicContext extends DynamicContext {
     private final DynamicContext delegate;
     private final int index;
@@ -151,6 +175,9 @@ public class ForEachSqlNode implements SqlNode {
     @Override
     public void appendSql(String sql) {
       GenericTokenParser parser = new GenericTokenParser("#{", "}", content -> {
+        // 会将 #{item} 占位符转换成 #{_frch_item_1} 的格式
+        // _frch_ 为固定的前缀
+        //
         String newContent = content.replaceFirst("^\\s*" + item + "(?![^.,:\\s])", itemizeItem(item, index));
         if (itemIndex != null && newContent.equals(content)) {
           newContent = content.replaceFirst("^\\s*" + itemIndex + "(?![^.,:\\s])", itemizeItem(itemIndex, index));
@@ -171,7 +198,13 @@ public class ForEachSqlNode implements SqlNode {
 
   private class PrefixedContext extends DynamicContext {
     private final DynamicContext delegate;
+    /**
+     * 指定的前缀
+     */
     private final String prefix;
+    /**
+     * 是否已经处理过前缀
+     */
     private boolean prefixApplied;
 
     public PrefixedContext(DynamicContext delegate, String prefix) {

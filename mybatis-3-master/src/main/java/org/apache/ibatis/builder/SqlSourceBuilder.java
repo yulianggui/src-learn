@@ -30,6 +30,9 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.type.JdbcType;
 
 /**
+ * 主要完成两方面的操作
+ * 1、解析 SQL 语句中的 #{}，占位符中定义的属性，格式类似于 #{_frc_tiem_0, javaType=int, jdbcType=NUMERIC}
+ * 2、另一方面将 SQL 语句中的 #{} 占位符替换成为 ? 占位符
  * @author Clinton Begin
  */
 public class SqlSourceBuilder extends BaseBuilder {
@@ -40,7 +43,15 @@ public class SqlSourceBuilder extends BaseBuilder {
     super(configuration);
   }
 
+  /**
+   *
+   * @param originalSql sqlNode.apply() 解析后的 SQL 语句
+   * @param parameterType 用户传入的参数类型
+   * @param additionalParameters 记录了形参与实参的对应关心，其实就是经过 SqlNode.apply() 方法处理后的 DynamicContext.bindings 集合
+   * @return 返回 SqlSource
+   */
   public SqlSource parse(String originalSql, Class<?> parameterType, Map<String, Object> additionalParameters) {
+    // 创建 ParameterMappingTokenHandler，用来解析 #{} 占位符中的参数属性一级替换占位符为 ?
     ParameterMappingTokenHandler handler = new ParameterMappingTokenHandler(configuration, parameterType, additionalParameters);
     // 解析 #{} 类型
     GenericTokenParser parser = new GenericTokenParser("#{", "}", handler);
@@ -50,6 +61,7 @@ public class SqlSourceBuilder extends BaseBuilder {
     } else {
       sql = parser.parse(originalSql);
     }
+    // 创建 StaticSqlSource ，其中封装了占位符被替换成为 ? 的 SQL 语句一级参数对应的 getParameterMappings 集合
     return new StaticSqlSource(configuration, sql, handler.getParameterMappings());
   }
 
@@ -85,6 +97,7 @@ public class SqlSourceBuilder extends BaseBuilder {
 
     @Override
     public String handleToken(String content) {
+      // parameterMappings 为有序的
       parameterMappings.add(buildParameterMapping(content));
       return "?";
     }

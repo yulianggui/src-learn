@@ -16,6 +16,8 @@
 package org.apache.ibatis.scripting.xmltags;
 
 /**
+ * 静态文本。 没有 trim 标签、${}、#{} 等文本，静态文本，直接使用 StaticTextSqlNode
+ * 直接追加到 sql。sqlBuild 中
  * @author Clinton Begin
  */
 public class StaticTextSqlNode implements SqlNode {

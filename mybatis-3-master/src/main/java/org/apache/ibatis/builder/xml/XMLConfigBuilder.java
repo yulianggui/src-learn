@@ -150,7 +150,8 @@ public class XMLConfigBuilder extends BaseBuilder {
       databaseIdProviderElement(root.evalNode("databaseIdProvider"));
       // 注册处理器
       typeHandlerElement(root.evalNode("typeHandlers"));
-      // mappers 标签
+      // mappers 标签 | 如果最后解析的是注解，并且发现 cacheRef | resultMap 找不到，则不理会了
+      // 其实在 xml 中，如果最终一次尝试解析，在解析的时候也不会抛出异常
       mapperElement(root.evalNode("mappers"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + e, e);

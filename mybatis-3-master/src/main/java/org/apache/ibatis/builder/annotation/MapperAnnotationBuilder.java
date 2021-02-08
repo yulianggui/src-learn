@@ -141,6 +141,7 @@ public class MapperAnnotationBuilder {
       parseCache();
       // 解析 cacheRef 注解， CacheNamespaceRef 注解
       // 这里解析失败的 cacheRef ，怎么保证 其 实在解析所有注解之后，在 xml 中再尝试一遍的？
+      // 答：其实在 xml 中，如果最终一次尝试解析，在解析的时候也不会抛出异常。如果最终是注解解析到最后，不再重复尝试时，也没问题
       parseCacheRef();
       // 解析每个方法，是否都存在  select | selectProvider 等
       for (Method method : type.getMethods()) {
