@@ -55,6 +55,7 @@ public class PreparedStatementHandler extends BaseStatementHandler {
   @Override
   public void batch(Statement statement) throws SQLException {
     PreparedStatement ps = (PreparedStatement) statement;
+    // JDBC 的批处理就是这样写的
     ps.addBatch();
   }
 

@@ -307,6 +307,7 @@ public abstract class BaseExecutor implements Executor {
     clearLocalCache();
     flushStatements();
     if (required) {
+      // 事务是在 Executor 层被提交的
       transaction.commit();
     }
   }

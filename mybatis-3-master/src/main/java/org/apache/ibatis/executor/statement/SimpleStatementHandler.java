@@ -65,6 +65,7 @@ public class SimpleStatementHandler extends BaseStatementHandler {
   @Override
   public void batch(Statement statement) throws SQLException {
     String sql = boundSql.getSql();
+    // JDBC 批处理
     statement.addBatch(sql);
   }
 

@@ -677,6 +677,9 @@ public class Configuration {
     } else {
       executor = new SimpleExecutor(this, transaction);
     }
+    // 如果开启了二级缓存，则会使用 CachingExecutor 包装一次 executor
+    // 装饰器原理
+    // <setting name="cacheEnabled" value="true"/>
     if (cacheEnabled) {
       executor = new CachingExecutor(executor);
     }
