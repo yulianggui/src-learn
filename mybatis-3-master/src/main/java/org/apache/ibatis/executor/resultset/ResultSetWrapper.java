@@ -37,16 +37,38 @@ import org.apache.ibatis.type.TypeHandlerRegistry;
 import org.apache.ibatis.type.UnknownTypeHandler;
 
 /**
+ * java.sql.ResultSet 的包装器
  * @author Iwao AVE!
  */
 public class ResultSetWrapper {
 
+  /**
+   * ResultSet
+   */
   private final ResultSet resultSet;
+  /**
+   * 类型转换注册器
+   */
   private final TypeHandlerRegistry typeHandlerRegistry;
+  /**
+   * 字段的名字数组
+   */
   private final List<String> columnNames = new ArrayList<>();
+  /**
+   * 字段的 java Type 名字的数组
+   */
   private final List<String> classNames = new ArrayList<>();
+  /**
+   * 字段的 jdbc Type 的数组， ResultSetMetaData 对象中获取的，
+   */
   private final List<JdbcType> jdbcTypes = new ArrayList<>();
+  /**
+   * 字段名称 key javaType TypeHandler
+   */
   private final Map<String, Map<Class<?>, TypeHandler<?>>> typeHandlerMap = new HashMap<>();
+  /**
+   *
+   */
   private final Map<String, List<String>> mappedColumnNamesMap = new HashMap<>();
   private final Map<String, List<String>> unMappedColumnNamesMap = new HashMap<>();
 
@@ -92,6 +114,8 @@ public class ResultSetWrapper {
    * Gets the type handler to use when reading the result set.
    * Tries to get from the TypeHandlerRegistry by searching for the property type.
    * If not found it gets the column JDBC type and tries to get a handler for it.
+   *
+   * 获取指定字段的指定 javaType 类型的 TypeHandler 对象
    *
    * @param propertyType
    *          the property type
@@ -161,6 +185,13 @@ public class ResultSetWrapper {
     unMappedColumnNamesMap.put(getMapKey(resultMap, columnPrefix), unmappedColumnNames);
   }
 
+  /**
+   * 获取 resultMap 明确指定的 字段名称
+   * @param resultMap
+   * @param columnPrefix
+   * @return
+   * @throws SQLException
+   */
   public List<String> getMappedColumnNames(ResultMap resultMap, String columnPrefix) throws SQLException {
     List<String> mappedColumnNames = mappedColumnNamesMap.get(getMapKey(resultMap, columnPrefix));
     if (mappedColumnNames == null) {

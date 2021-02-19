@@ -23,6 +23,8 @@ import java.util.List;
 import org.apache.ibatis.cursor.Cursor;
 
 /**
+ * 执行对象处理，处理 java.sql.ResultSet 成映射的对应的结果
+ * {@link DefaultResultSetHandler}
  * @author Clinton Begin
  */
 public interface ResultSetHandler {

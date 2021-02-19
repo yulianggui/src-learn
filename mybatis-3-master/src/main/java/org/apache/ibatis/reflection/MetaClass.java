@@ -284,6 +284,7 @@ public class MetaClass {
     return builder;
   }
 
+  // 找到参数为 0 个的构造方法，赋值给成员变量
   public boolean hasDefaultConstructor() {
     return reflector.hasDefaultConstructor();
   }

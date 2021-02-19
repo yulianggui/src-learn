@@ -26,30 +26,77 @@ import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.session.ResultHandler;
 
 /**
+ * StatementHandler 功能
  * @author Clinton Begin
  */
 public interface StatementHandler {
 
+  /**
+   * 得到预处理的 Statement 对象
+   * @param connection
+   * @param transactionTimeout
+   * @return
+   * @throws SQLException
+   */
   Statement prepare(Connection connection, Integer transactionTimeout)
       throws SQLException;
 
+  /**
+   * 参数设置，为 预编译的 Statement 对象设置参数
+   * @param statement
+   * @throws SQLException
+   */
   void parameterize(Statement statement)
       throws SQLException;
 
+  /**
+   * 添加 Statement 对象的批量操作
+   * @param statement
+   * @throws SQLException
+   */
   void batch(Statement statement)
       throws SQLException;
 
+  /**
+   * 执行 update
+   * @param statement
+   * @return
+   * @throws SQLException
+   */
   int update(Statement statement)
       throws SQLException;
 
+  /**
+   * 执行 查询
+   * @param statement
+   * @param resultHandler
+   * @param <E>
+   * @return
+   * @throws SQLException
+   */
   <E> List<E> query(Statement statement, ResultHandler resultHandler)
       throws SQLException;
 
+  /**
+   * 游标功能的查询
+   * @param statement
+   * @param <E>
+   * @return
+   * @throws SQLException
+   */
   <E> Cursor<E> queryCursor(Statement statement)
       throws SQLException;
 
+  /**
+   * 获取 SQL
+   * @return
+   */
   BoundSql getBoundSql();
 
+  /**
+   * 获取参数处理器
+   * @return
+   */
   ParameterHandler getParameterHandler();
 
 }

@@ -27,7 +27,8 @@ import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.RowBounds;
 
 /**
- * 查看自增主键生成通用器。保存了一些信息而已
+ * 基于从数据库查询主键的实现
+ *   适用于 Oracle、PostgreSQL
  * @author Clinton Begin
  * @author Jeff Butler
  */
@@ -69,6 +70,7 @@ public class SelectKeyGenerator implements KeyGenerator {
         if (values.size() == 0) {
           throw new ExecutorException("SelectKey returned no data.");
         } else if (values.size() > 1) {
+          // 查询结果过多 values.size == 1 才是正确的
           throw new ExecutorException("SelectKey returned more than one value.");
         } else {
           MetaObject metaResult = configuration.newMetaObject(values.get(0));

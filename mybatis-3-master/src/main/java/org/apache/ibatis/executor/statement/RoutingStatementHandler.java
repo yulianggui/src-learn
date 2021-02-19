@@ -30,6 +30,14 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
 /**
+ * 路由 StatementHandler
+ * 持有 StatementHandler ，这个 delegate 对象就是 SimpleStatementHandler、PreparedStatement、CallableStatement
+ *
+ * 在 RoutingStatementHandler 构造方法中，会根据 ms.getStatementType() 配置的执行类型，创建 delegate 对象
+ * 这个也值得学习，RoutingStatementHandler 同样也实现了  StatementHandler，并且其他的 接口实现，通过 delegate 对象执行
+ *
+ * 当然工厂模式也是可以的，不同的思路，扩展一下思路吧
+ *
  * @author Clinton Begin
  */
 public class RoutingStatementHandler implements StatementHandler {

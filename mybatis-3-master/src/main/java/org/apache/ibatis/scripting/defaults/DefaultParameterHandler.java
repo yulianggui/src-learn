@@ -33,6 +33,7 @@ import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
 /**
+ * 默认的参数处理器
  * @author Clinton Begin
  * @author Eduardo Macarron
  */

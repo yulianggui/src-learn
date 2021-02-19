@@ -44,11 +44,16 @@ import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
 /**
+ * 方法的 KeyGenerator 实现类，
+ * 基于 Statement#getGeneratedKeys() 适用于 MySQL、H2 主键生成
  * @author Clinton Begin
  * @author Kazuki Shimizu
  */
 public class Jdbc3KeyGenerator implements KeyGenerator {
 
+  /**
+   * 自增主键的 key = param2_ 开始
+   */
   private static final String SECOND_GENERIC_PARAM_NAME = ParamNameResolver.GENERIC_NAME_PREFIX + "2";
 
   /**
@@ -63,6 +68,7 @@ public class Jdbc3KeyGenerator implements KeyGenerator {
 
   @Override
   public void processBefore(Executor executor, MappedStatement ms, Statement stmt, Object parameter) {
+    // 实现为空，因为对于 Jdbc3KeyGenerator 类的主键，是在 SQL 执行后，才生成
     // do nothing
   }
 
@@ -72,16 +78,19 @@ public class Jdbc3KeyGenerator implements KeyGenerator {
   }
 
   public void processBatch(MappedStatement ms, Statement stmt, Object parameter) {
+    // 得到所有的自增主键的属性
     final String[] keyProperties = ms.getKeyProperties();
     if (keyProperties == null || keyProperties.length == 0) {
       return;
     }
+    // stmt.getGeneratedKeys() 。 获取自增主键，将自增主键设置到 parameter 中
     try (ResultSet rs = stmt.getGeneratedKeys()) {
       final ResultSetMetaData rsmd = rs.getMetaData();
       final Configuration configuration = ms.getConfiguration();
       if (rsmd.getColumnCount() < keyProperties.length) {
         // Error?
       } else {
+        // 设置主键
         assignKeys(configuration, rs, rsmd, keyProperties, parameter);
       }
     } catch (Exception e) {
@@ -94,13 +103,16 @@ public class Jdbc3KeyGenerator implements KeyGenerator {
       Object parameter) throws SQLException {
     if (parameter instanceof ParamMap || parameter instanceof StrictMap) {
       // Multi-param or single param with @Param
+      // 多个参数 Map 或者 仅仅是通过 @Param 标准的单参数
       assignKeysToParamMap(configuration, rs, rsmd, keyProperties, (Map<String, ?>) parameter);
     } else if (parameter instanceof ArrayList && !((ArrayList<?>) parameter).isEmpty()
         && ((ArrayList<?>) parameter).get(0) instanceof ParamMap) {
       // Multi-param or single param with @Param in batch operation
+      // List<Map<String, Object>> 的类型
       assignKeysToParamMapList(configuration, rs, rsmd, keyProperties, (ArrayList<ParamMap<?>>) parameter);
     } else {
       // Single param without @Param
+      // 单个参数，并且没有 @param 标注
       assignKeysToParam(configuration, rs, rsmd, keyProperties, parameter);
     }
   }

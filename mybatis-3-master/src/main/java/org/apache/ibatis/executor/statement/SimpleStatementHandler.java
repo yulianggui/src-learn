@@ -15,10 +15,7 @@
  */
 package org.apache.ibatis.executor.statement;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.List;
 
 import org.apache.ibatis.cursor.Cursor;
@@ -92,6 +89,10 @@ public class SimpleStatementHandler extends BaseStatementHandler {
     }
   }
 
+  /**
+   * 不能处理预编译的 sql
+   * @param statement
+   */
   @Override
   public void parameterize(Statement statement) {
     // N/A
