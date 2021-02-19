@@ -35,6 +35,7 @@ import org.apache.ibatis.transaction.Transaction;
 import org.apache.ibatis.transaction.TransactionFactory;
 
 /**
+ * 保存一次延迟加载所需要的全部信息
  * @author Clinton Begin
  */
 public class ResultLoader {
@@ -42,12 +43,21 @@ public class ResultLoader {
   protected final Configuration configuration;
   protected final Executor executor;
   protected final MappedStatement mappedStatement;
+  /**
+   * 记录了延迟执行的SQL 语句的实参
+   */
   protected final Object parameterObject;
   protected final Class<?> targetType;
   protected final ObjectFactory objectFactory;
   protected final CacheKey cacheKey;
   protected final BoundSql boundSql;
+  /**
+   * 负责将延迟加载得到的结采对象转换成 targetType 类型的对象
+   */
   protected final ResultExtractor resultExtractor;
+  /**
+   * 创建 ResultLoader 的线程id
+   */
   protected final long creatorThreadId;
 
   protected boolean loaded;
@@ -67,7 +77,9 @@ public class ResultLoader {
   }
 
   public Object loadResult() throws SQLException {
+    // 执行延迟加载，得到结果对象，并以List 的形式返回
     List<Object> list = selectList();
+    // 转换为目标对象
     resultObject = resultExtractor.extractObjectFromList(list, targetType);
     return resultObject;
   }

@@ -34,14 +34,26 @@ public class ResultExtractor {
     this.objectFactory = objectFactory;
   }
 
+  /**
+   * 1、如果目标类型 为 List ，则无需转换
+   * 2、如果目标类型为 collection 的子类、数组类型，则需要转换
+   * 3、如果目标类型是普通类型 java 对象，且延迟加载得到的 list 为 1，则取第一个
+   * @param list
+   * @param targetType
+   * @return
+   */
   public Object extractObjectFromList(List<Object> list, Class<?> targetType) {
     Object value = null;
+    // 1、list 直接赋值
     if (targetType != null && targetType.isAssignableFrom(list.getClass())) {
       value = list;
+      // collection 的子类
     } else if (targetType != null && objectFactory.isCollection(targetType)) {
+      // 这部分前面的基础层已经存在相应的方法了
       value = objectFactory.create(targetType);
       MetaObject metaObject = configuration.newMetaObject(value);
       metaObject.addAll(list);
+      // 数组
     } else if (targetType != null && targetType.isArray()) {
       Class<?> arrayComponentType = targetType.getComponentType();
       Object array = Array.newInstance(arrayComponentType, list.size());
@@ -55,8 +67,10 @@ public class ResultExtractor {
       }
     } else {
       if (list != null && list.size() > 1) {
+        // 异常
         throw new ExecutorException("Statement returned more than one row, where no more than one was expected.");
       } else if (list != null && list.size() == 1) {
+        // 返回第一个
         value = list.get(0);
       }
     }

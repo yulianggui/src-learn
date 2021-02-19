@@ -32,6 +32,9 @@ import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.managed.ManagedTransactionFactory;
 
 /**
+ * DefaultSqlSession 工厂，代码比较简单
+ *   调用统一重载的逻辑，值得学习
+ *      统一的 接口功能定义，考虑全面。这就需要我们有比较好的全局观、经验
  * @author Clinton Begin
  */
 public class DefaultSqlSessionFactory implements SqlSessionFactory {

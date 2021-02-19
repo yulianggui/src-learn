@@ -50,8 +50,19 @@ public class DefaultSqlSession implements SqlSession {
   private final Configuration configuration;
   private final Executor executor;
 
+  /**
+   * 是否自动提交事务，默认为 false
+   */
   private final boolean autoCommit;
+  /**
+   * 当前缓存中是否存在脏数据
+   */
   private boolean dirty;
+  /**
+   * 游标集合
+   * 为防止用户忘记关闭已经打开的游标对象，会通过 cursorList 字段记录由该 SqlSession 对象生成的游标对象
+   * 在 close 方法中，统一关闭这些游标对象
+   */
   private List<Cursor<?>> cursorList;
 
   public DefaultSqlSession(Configuration configuration, Executor executor, boolean autoCommit) {
@@ -148,6 +159,7 @@ public class DefaultSqlSession implements SqlSession {
   private <E> List<E> selectList(String statement, Object parameter, RowBounds rowBounds, ResultHandler handler) {
     try {
       MappedStatement ms = configuration.getMappedStatement(statement);
+      // 在 SqlSession 就已经将参数进行了解析了
       return executor.query(ms, wrapCollection(parameter), rowBounds, handler);
     } catch (Exception e) {
       throw ExceptionFactory.wrapException("Error querying database.  Cause: " + e, e);
@@ -189,6 +201,7 @@ public class DefaultSqlSession implements SqlSession {
   @Override
   public int update(String statement, Object parameter) {
     try {
+      // 脏数据标志位  commit 之后，设置为 false
       dirty = true;
       MappedStatement ms = configuration.getMappedStatement(statement);
       return executor.update(ms, wrapCollection(parameter));
@@ -243,6 +256,10 @@ public class DefaultSqlSession implements SqlSession {
     }
   }
 
+  /**
+   * 主动掉用刷新
+   * @return
+   */
   @Override
   public List<BatchResult> flushStatements() {
     try {

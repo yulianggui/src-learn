@@ -30,6 +30,9 @@ import org.apache.ibatis.executor.BatchResult;
 import org.apache.ibatis.reflection.ExceptionUtil;
 
 /**
+ * 提供了两种方式
+ *   一种与 DefaultSqlSession 相同
+ *   一种 使用 ThreadLocal，同一个线程中使用复用 SqlSession
  * @author Larry Meadors
  */
 public class SqlSessionManager implements SqlSessionFactory, SqlSession {

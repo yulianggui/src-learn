@@ -67,7 +67,7 @@ public class ResultSetWrapper {
    */
   private final Map<String, Map<Class<?>, TypeHandler<?>>> typeHandlerMap = new HashMap<>();
   /**
-   *
+   * 明确指定映射关系的列
    */
   private final Map<String, List<String>> mappedColumnNamesMap = new HashMap<>();
   private final Map<String, List<String>> unMappedColumnNamesMap = new HashMap<>();

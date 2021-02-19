@@ -47,6 +47,10 @@ import org.apache.ibatis.session.RowBounds;
  */
 public class ResultLoaderMap {
 
+  /**
+   * 延迟加载的数据与 LoadPair 的对应关系
+   * 其中 LoadPair 封装了 resultLoader
+   */
   private final Map<String, LoadPair> loaderMap = new HashMap<>();
 
   public void addLoader(String property, MetaObject metaResultObject, ResultLoader resultLoader) {
@@ -117,6 +121,7 @@ public class ResultLoaderMap {
     private final transient Object serializationCheck = new Object();
     /**
      * Meta object which sets loaded properties.
+     * 外层对象的 MetaObject
      */
     private transient MetaObject metaResultObject;
     /**
