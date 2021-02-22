@@ -40,9 +40,17 @@ public class Plugin implements InvocationHandler {
     this.signatureMap = signatureMap;
   }
 
+  /**
+   * 解析 参数，创建代理对象
+   * @param target
+   * @param interceptor
+   * @return
+   */
   public static Object wrap(Object target, Interceptor interceptor) {
+    // 解析 interceptor 注解内容
     Map<Class<?>, Set<Method>> signatureMap = getSignatureMap(interceptor);
     Class<?> type = target.getClass();
+    // 获取接口信息
     Class<?>[] interfaces = getAllInterfaces(type, signatureMap);
     if (interfaces.length > 0) {
       return Proxy.newProxyInstance(
@@ -56,10 +64,14 @@ public class Plugin implements InvocationHandler {
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
     try {
+      // 获取方法声明的 class 对应的 方法合集
       Set<Method> methods = signatureMap.get(method.getDeclaringClass());
+      // 是否包含该方法 -- 这里的 Method 的 equal 是不是被重写过啊？ -- 源码，是的
       if (methods != null && methods.contains(method)) {
+        // 通过 interceptor 调用返回
         return interceptor.intercept(new Invocation(target, method, args));
       }
+      // 原始的方式
       return method.invoke(target, args);
     } catch (Exception e) {
       throw ExceptionUtil.unwrapThrowable(e);
@@ -88,7 +100,10 @@ public class Plugin implements InvocationHandler {
 
   private static Class<?>[] getAllInterfaces(Class<?> type, Map<Class<?>, Set<Method>> signatureMap) {
     Set<Class<?>> interfaces = new HashSet<>();
+    // 根据 type 类型，比如 executor = (Executor) interceptorChain.pluginAll(executor);
     while (type != null) {
+
+      // type = executor.class
       for (Class<?> c : type.getInterfaces()) {
         if (signatureMap.containsKey(c)) {
           interfaces.add(c);
